@@ -199,6 +199,7 @@ Once the desktop app is running:
 - Use the **Drive** tab to control a registered vehicle.
 
 Helm Scout uses the `helm` CLI and the `helm-ui` desktop npm script.
+Launch the desktop app from the project folder with `npm run helm-ui`.
 
 Or use the CLI instead — same code, different surface. From the `helm-scout/` folder:
 
