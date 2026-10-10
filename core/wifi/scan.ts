@@ -7,7 +7,7 @@ import { runCommandAsync } from "../toolchains/process.js";
 /**
  * Host-side Wi-Fi scan.
  *
- * Asks the laptop/desktop running Helm what SSIDs its own radio sees, so
+ * Asks the laptop/desktop running Helm Scout what SSIDs its own radio sees, so
  * the flash wizard can offer an SSID dropdown instead of forcing the user
  * to type it. The robot will then connect to whichever SSID the user
  * picks — we don't validate that the robot can reach it; the typical
@@ -60,7 +60,7 @@ async function scanLinux(): Promise<WifiScanResult> {
         ok: false,
         networks: [],
         unsupported: true,
-        reason: "nmcli not installed — Helm uses NetworkManager to scan on Linux",
+        reason: "nmcli not installed — Helm Scout uses NetworkManager to scan on Linux",
       };
     }
     return {

@@ -1,3 +1,3 @@
 # Docs
 
-Design notes, architecture decisions, and reference material for PSF Helm.
+Design notes, architecture decisions, and reference material for Helm Scout.

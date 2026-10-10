@@ -30,7 +30,7 @@ export async function findPidsOnPort(port: number): Promise<number[]> {
  * Read the full command line of a running process.
  *
  * The whole isolation story rests on this: we kill processes whose command
- * line includes *Helm's* ollama binary path, never processes whose command
+ * line includes *Helm Scout's* ollama binary path, never processes whose command
  * line points elsewhere (e.g., a system Ollama on 11434).
  */
 async function readCommandLine(pid: number): Promise<string> {
@@ -43,10 +43,10 @@ async function readCommandLine(pid: number): Promise<string> {
 }
 
 /**
- * Kill any stale Helm-owned Ollama instances on the private port.
+ * Kill any stale Helm Scout-owned Ollama instances on the private port.
  *
  * Safe across reboots: identifies "ours" by whether the process's command
- * line includes Helm's binary path. Will NOT touch:
+ * line includes Helm Scout's binary path. Will NOT touch:
  *   - a system Ollama daemon on port 11434
  *   - a Core-CE Ollama instance (different binary path)
  *   - anything not running from <dataDir>/ollama/bin/
@@ -72,7 +72,7 @@ export async function killStaleHelmOllama(port: number): Promise<number> {
 }
 
 /**
- * Best-effort: confirm a system Ollama isn't already on Helm's chosen port.
+ * Best-effort: confirm a system Ollama isn't already on Helm Scout's chosen port.
  * Returns true if the port is free or holds one of our own processes (which
  * killStaleHelmOllama will clean up).
  */
@@ -92,5 +92,5 @@ export async function portIsClaimableByHelm(port: number): Promise<{
       };
     }
   }
-  return { claimable: true, reason: "held by stale Helm process; will clean up" };
+  return { claimable: true, reason: "held by stale Helm Scout process; will clean up" };
 }

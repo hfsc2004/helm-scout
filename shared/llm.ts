@@ -3,14 +3,14 @@
 /**
  * LLM subsystem types, shared across processes.
  *
- * PSF Helm runs its own private Ollama instance. It does not touch the
+ * Helm Scout runs its own private Ollama instance. It does not touch the
  * system Ollama daemon. The isolation contract is non-negotiable.
  */
 
 export interface OllamaStatus {
   installed: boolean;
   running: boolean;
-  /** Helm's private port. Distinct from system Ollama's 11434. */
+  /** Helm Scout's private port. Distinct from system Ollama's 11434. */
   port: number;
   pid: number | null;
   binaryPath: string;

@@ -23,7 +23,7 @@
 
   // Start the telemetry stream only while the Driver view is mounted, and
   // only against the currently-selected vehicle. Closing this tab tears it
-  // down so an idle Helm-UI never polls /telemetry on the LAN.
+  // down so an idle Helm Scout never polls /telemetry on the LAN.
   $: if (canDrive && $fleet.selectedId && $vehicleState.vehicleId !== $fleet.selectedId) {
     void vehicleState.start($fleet.selectedId);
   } else if (!canDrive && $vehicleState.vehicleId !== null) {

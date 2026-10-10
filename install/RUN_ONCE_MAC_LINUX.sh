@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Pseudo Science Fiction
-# PSF Helm — one-time dependency installer (Linux / macOS)
+# Helm Scout — one-time dependency installer (Linux / macOS)
 #
 # Run this once after cloning the repo, or any time package.json changes.
 # Re-running is safe; npm will reconcile.
@@ -13,7 +13,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo ""
 echo "=============================================="
-echo "  PSF Helm — one-time setup (Linux / macOS)"
+echo "  Helm Scout — one-time setup (Linux / macOS)"
 echo "=============================================="
 echo ""
 
@@ -29,7 +29,7 @@ NODE_MAJOR="$(echo "$NODE_VERSION" | sed -E 's/^v([0-9]+).*/\1/')"
 echo "Node.js: $NODE_VERSION"
 
 if [ "$NODE_MAJOR" -lt 20 ]; then
-  echo "WARNING: Node $NODE_VERSION detected; PSF Helm targets Node 20 LTS or newer."
+  echo "WARNING: Node $NODE_VERSION detected; Helm Scout targets Node 20 LTS or newer."
   echo "         The install may succeed, but please upgrade when possible."
   echo ""
 fi

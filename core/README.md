@@ -1,6 +1,6 @@
 # Core
 
-The business logic of PSF Helm. No UI, no Electron, no CLI.
+The business logic of Helm Scout. No UI, no Electron, no CLI.
 
 Both surfaces (`helm` CLI and `helm-ui` desktop app) import from here. Neither owns logic; they translate user input into core calls and present core output.
 

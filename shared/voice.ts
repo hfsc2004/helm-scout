@@ -3,8 +3,8 @@
 /**
  * Voice subsystem types, shared across processes.
  *
- * Voice in PSF Helm is optional. The user opts in (first-run wizard or
- * settings), Helm downloads engine binaries + a default model set from its
+ * Voice in Helm Scout is optional. The user opts in (first-run wizard or
+ * settings), Helm Scout downloads engine binaries + a default model set from its
  * own GitHub releases, and stores everything under one local folder.
  *
  * "Not installed" is a fully supported state — UI gates the mic, CLI reports

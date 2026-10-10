@@ -3,11 +3,11 @@
 /**
  * Client-side bindings for the loopback control plane (see ./server.ts).
  *
- * The standalone `helm` CLI uses this to ask a running Helm-UI for a frame
+ * The standalone `helm` CLI uses this to ask a running Helm Scout for a frame
  * out of its shared camera-stream cache, so the CLI and the live UI don't
  * fight over the camera firmware's single HTTP slot.
  *
- * Liveness check: even if control-plane.json exists, the Helm-UI may have
+ * Liveness check: even if control-plane.json exists, the Helm Scout may have
  * died ungracefully. We always probe /v1/health (short timeout) before
  * relying on the descriptor.
  */
@@ -70,7 +70,7 @@ async function timedFetch(
 }
 
 /**
- * Returns the descriptor if a running Helm-UI's control plane answers
+ * Returns the descriptor if a running Helm Scout's control plane answers
  * /v1/health within `timeoutMs`. Returns null on any failure (file
  * missing, port stale, wrong token, network error). Stale descriptor
  * files are removed so future invocations skip the probe entirely.

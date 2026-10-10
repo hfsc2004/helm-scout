@@ -9,6 +9,11 @@ import * as controlPlane from "../core/control-plane/server.js";
 import { stopLightShows } from "./ipc/lights.js";
 import { registerIpcHandlers } from "./ipc/index.js";
 
+// Keep the existing Electron data directory when setting the display name.
+const userDataPath = app.getPath("userData");
+app.setName("Helm Scout");
+app.setPath("userData", userDataPath);
+
 const isDev = !app.isPackaged;
 const DEV_URL = "http://localhost:5173";
 
@@ -32,7 +37,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 600,
     backgroundColor: "#0f1419",
-    title: "PSF Helm",
+    title: "Helm Scout",
     webPreferences: {
       preload: join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -66,7 +71,7 @@ void app.whenReady().then(async () => {
   registerIpcHandlers({ version: readVersion() });
 
   // Local control plane: bound to 127.0.0.1 only. Lets the standalone
-  // `helm` CLI talk to this Helm-UI instance so cross-process consumers
+  // `helm` CLI talk to this Helm Scout instance so cross-process consumers
   // (CLI snapshot, future planner calls) share the same camera cache.
   // Failure to start is non-fatal — the UI still works without it.
   try {

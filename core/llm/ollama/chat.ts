@@ -4,7 +4,7 @@ import { HELM_OLLAMA_PORT } from "./env.js";
 import type { ChatMessage, ChatStreamChunk } from "../../../shared/llm.js";
 
 /**
- * HTTP client for Helm's private Ollama /api/chat endpoint.
+ * HTTP client for Helm Scout's private Ollama /api/chat endpoint.
  *
  * Always talks to 127.0.0.1:<HELM_OLLAMA_PORT>. Never the system Ollama on
  * 11434. Never anywhere remote. The planner uses this; nothing else should
@@ -74,7 +74,7 @@ export async function chat(opts: ChatOptions): Promise<ChatResult> {
   } catch (err) {
     clearTimeout(timeout);
     throw new Error(
-      `chat: cannot reach Helm's private Ollama at ${url}. Is it running? (helm ollama-start). ${
+      `chat: cannot reach Helm Scout's private Ollama at ${url}. Is it running? (helm ollama-start). ${
         err instanceof Error ? err.message : String(err)
       }`
     );
@@ -85,7 +85,7 @@ export async function chat(opts: ChatOptions): Promise<ChatResult> {
   if (!res.ok) {
     if (res.status === 404 && /model.*not found|pull/i.test(text)) {
       throw new Error(
-        `chat: model "${opts.model}" is not installed in Helm's private Ollama. ` +
+        `chat: model "${opts.model}" is not installed in Helm Scout's private Ollama. ` +
         `Run: helm model-download <url>  (or use --model <existing-name>).`
       );
     }

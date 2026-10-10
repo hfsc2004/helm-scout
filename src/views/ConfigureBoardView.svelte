@@ -141,7 +141,7 @@
     // Wi-Fi 6 / 6E parts: ESP32-C5, ESP32-C6 (2.4 + 5GHz on C5; 2.4 only on C6
     // but with 802.11ax). Most ESP32 family chips remain 2.4-only.
     if (f.includes("esp32c5")) return ["2.4GHz", "5GHz"];
-    // Boards Helm doesn't ship templates for today but planning for: pico 2w
+    // Boards Helm Scout doesn't ship templates for today but planning for: pico 2w
     // dual-band. Safe default for any other chip is 2.4GHz-only.
     if (f.includes("pico_2w") || f.includes("pico-2w")) return ["2.4GHz", "5GHz"];
     return ["2.4GHz"];
@@ -615,7 +615,7 @@
       <section>
         <h3>{isSensorBoardV13 ? "Sensor-board vehicle" : "Attach to vehicle"}</h3>
         {#if isSensorBoardV13}
-          <p class="muted small">This v1.3 image is camera/sensor bring-up only. Choose an existing vehicle or create a new camera-only vehicle; Helm will not expect a separate drive board.</p>
+          <p class="muted small">This v1.3 image is camera/sensor bring-up only. Choose an existing vehicle or create a new camera-only vehicle; Helm Scout will not expect a separate drive board.</p>
         {:else}
           <p class="muted small">The camera sidecar attaches to a vehicle by its IP. Pick an existing one, or leave blank and we'll create a new vehicle with the name below.</p>
         {/if}
@@ -819,7 +819,7 @@
         </p>
       {:else}
         <p class="muted small">
-          DHCP: the router assigns the IP. Helm will reach the board by its mDNS name
+          DHCP: the router assigns the IP. Helm Scout will reach the board by its mDNS name
           <code>{mdnsHost}</code> instead, so a new lease won't break the connection.
         </p>
         <p class="muted small">

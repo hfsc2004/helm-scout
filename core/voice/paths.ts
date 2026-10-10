@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { paths } from "../paths.js";
 
 /**
- * Every voice-related file in PSF Helm lives under one directory.
+ * Every voice-related file in Helm Scout lives under one directory.
  *
  * Uninstall is therefore "stop processes + delete this directory." Nothing
  * voice-related leaks elsewhere. This is the architectural rule that makes

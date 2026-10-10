@@ -6,7 +6,7 @@ import { createReadStream, statSync } from "node:fs";
 import { HELM_OLLAMA_PORT } from "./env.js";
 
 /**
- * Register a local .gguf file with Helm's private Ollama instance.
+ * Register a local .gguf file with Helm Scout's private Ollama instance.
  *
  * The flow (matches Core-CE's launchModelInOllama path):
  *   1. Compute the SHA-256 of the .gguf.
@@ -196,7 +196,7 @@ export async function wrapForOllama(opts: WrapOptions): Promise<WrapResult> {
 }
 
 /**
- * List models currently registered with Helm's private Ollama.
+ * List models currently registered with Helm Scout's private Ollama.
  */
 export async function listModels(): Promise<
   Array<{ name: string; size: number; modified_at?: string }>
@@ -213,7 +213,7 @@ export async function listModels(): Promise<
 }
 
 /**
- * Remove a model from Helm's private Ollama.
+ * Remove a model from Helm Scout's private Ollama.
  */
 export async function removeModel(name: string): Promise<void> {
   const url = `http://127.0.0.1:${HELM_OLLAMA_PORT}/api/delete`;

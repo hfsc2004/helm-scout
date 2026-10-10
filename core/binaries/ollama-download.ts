@@ -8,11 +8,11 @@ import { paths } from "../paths.js";
 import { STORAGE_LIMITS } from "../storage/limits.js";
 
 /**
- * Download Helm's private Ollama binary from ollama.com.
+ * Download Helm Scout's private Ollama binary from ollama.com.
  *
  * Linux x64 only for v0.1. macOS and Windows arrive in their own branch.
  *
- * The download is opt-in and one-time per Helm install. The privacy canary
+ * The download is opt-in and one-time per Helm Scout install. The privacy canary
  * acknowledges this destination explicitly.
  */
 
@@ -137,7 +137,7 @@ export async function downloadOllama(
 }
 
 /**
- * Remove the entire Helm-private Ollama tree.
+ * Remove the entire Helm Scout-private Ollama tree.
  */
 export async function uninstallOllama(): Promise<{ removed: boolean; freedBytes: number }> {
   const { rmSync, existsSync: exists, statSync: stat } = await import("node:fs");

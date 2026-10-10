@@ -1,5 +1,5 @@
 @echo off
-REM PSF Helm - one-time dependency installer (Windows)
+REM Helm Scout - one-time dependency installer (Windows)
 REM
 REM Run this once after cloning the repo, or any time package.json changes.
 REM Re-running is safe; npm will reconcile.
@@ -11,7 +11,7 @@ set "REPO_ROOT=%SCRIPT_DIR%.."
 
 echo.
 echo ==============================================
-echo   PSF Helm - one-time setup (Windows)
+echo   Helm Scout - one-time setup (Windows)
 echo ==============================================
 echo.
 

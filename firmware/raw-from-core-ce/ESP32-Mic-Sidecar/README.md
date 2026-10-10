@@ -1,6 +1,6 @@
 # ESP32 Mic Sidecar — STARTER (UNTESTED)
 
-A minimal Arduino sketch that turns an ESP32 + INMP441 I2S microphone into a roving-mic sidecar that PSF Helm's `<AudioFeed>` component can play in the desktop UI.
+A minimal Arduino sketch that turns an ESP32 + INMP441 I2S microphone into a roving-mic sidecar that Helm Scout's `<AudioFeed>` component can play in the desktop UI.
 
 ## Wire format
 

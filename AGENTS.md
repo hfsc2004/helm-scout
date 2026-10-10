@@ -1,6 +1,6 @@
-# AGENTS.md — operator manual for LLM Captains driving PSF Helm
+# AGENTS.md — operator manual for LLM Captains driving Helm Scout
 
-You are an LLM Agent that has been asked to drive a real physical robot through PSF Helm. This file is written **for you**. Read it once at the start of the session; refer back to it whenever you're unsure how to act. Most agent-aware coding CLIs (Codex, Cursor, Claude Code, Grok) load this file automatically when a session starts in this repo.
+You are an LLM Agent that has been asked to drive a real physical robot through Helm Scout. This file is written **for you**. Read it once at the start of the session; refer back to it whenever you're unsure how to act. Most agent-aware coding CLIs (Codex, Cursor, Claude Code, Grok) load this file automatically when a session starts in this repo.
 
 The conventions used by other LLM-agent docs (`CLAUDE.md`, `AGENTS.md`, `.cursorrules`) all converge on the same goal: tell the model what it needs to know to act safely and effectively. This file is that, for the specific job of *driving the robot* — not for editing the codebase.
 
@@ -23,7 +23,7 @@ A small skid-steer ground robot (the "Truck") built on:
 - **Four Sharp GP2Y0A21 IR distance sensors** on the drive board: front-left at 45° west of forward, front-center, front-right at 45° east, and rear. These feed an on-firmware **collision guard** that *refuses* forward commands when the front-center sensor sees something close, and refuses reverse when the rear sensor does. The guard is on by default and you cannot turn it off.
 - **A firmware deadman timer (800 ms).** If the firmware doesn't receive a command within 800 ms of the last one, it stops the motors on its own. This means a command with no explicit duration won't run forever — but you should still issue an explicit `--ms` duration and a follow-up `stop` for any motion that needs to be precise.
 
-PSF Helm's `helm` CLI is your interface to this robot. The same CLI a human uses *is* your agent surface — there is no separate "agent API," no MCP server, no special bridge. The user has put `helm` on your PATH (via `npm run helm --`); you call it the way a shell user would.
+Helm Scout's `helm` CLI is your interface to this robot. The same CLI a human uses *is* your agent surface — there is no separate "agent API," no MCP server, no special bridge. The user has put `helm` on your PATH (via `npm run helm --`); you call it the way a shell user would.
 
 ---
 
@@ -173,7 +173,7 @@ The chassis on this truck has motors mounted matched-direction (not the conventi
 {"ok": false, "error": "..."}
 
 // SAFETY BLOCK — the firmware refused you. The guard tripped.
-// This is HTTP 409 and Helm surfaces it as an error with status 409.
+// This is HTTP 409 and Helm Scout surfaces it as an error with status 409.
 // Do not retry the same command. Re-snapshot and pick a different motion.
 {"ok": false, "blocked": "forward", "reason": "front IR over threshold"}
 {"ok": false, "blocked": "reverse", "reason": "rear IR over threshold"}
@@ -195,7 +195,7 @@ Covered in detail in [The 3-command Captain loop](#the-3-command-captain-loop) a
 |---|---|
 | `--base64` | Default for Captains. Frame + telemetry inline in JSON. |
 | `--no-telemetry` | Rare. Only if you genuinely don't need the IR/guard data and want a faster grab. |
-| `--no-bridge` | Skip the Helm-UI loopback shortcut. You almost never want this — the bridge is what lets you snapshot while the live UI is also watching the same camera. |
+| `--no-bridge` | Skip the Helm Scout loopback shortcut. You almost never want this — the bridge is what lets you snapshot while the live UI is also watching the same camera. |
 | `--timeout-ms` | Default 5000. Raise if you're on a flaky Wi-Fi link. |
 
 ### 4. `helm state` — telemetry without a camera grab
@@ -234,7 +234,7 @@ Hits `/health` on the drive board. Use this once at the start of a session to co
 helm drive <id> "go forward 2 seconds"
 ```
 
-This pipes the intent through a *local* Ollama model to plan a single `cmd`. It exists for humans who want to type English into Helm without configuring an external LLM. **You should not use this.** You are already an LLM; routing your intent through another, smaller LLM only adds latency, indirection, and a second source of misinterpretation. Use `helm cmd` directly.
+This pipes the intent through a *local* Ollama model to plan a single `cmd`. It exists for humans who want to type English into Helm Scout without configuring an external LLM. **You should not use this.** You are already an LLM; routing your intent through another, smaller LLM only adds latency, indirection, and a second source of misinterpretation. Use `helm cmd` directly.
 
 ### 8. `helm describe` — the authoritative full schema
 
@@ -258,7 +258,7 @@ not choose profiles automatically. `frame` returns the latest cached data:
 check its age, validity, resolution, frame sequence, and captured-frame interval;
 requested frequency does not guarantee fresh frames at that rate.
 The separate LR Front/Rear VL53L1CBs use `vehicle-tof-mode` and are unaffected.
-Helm display names follow the robot's observed ranges: `fast` is Extended
+Helm Scout display names follow the robot's observed ranges: `fast` is Extended
 Reach (~6 ft at 30 Hz), `inspect` is Far Detail (~5 ft at 5 Hz), `detail`
 is Balanced Detail (~4 ft at 10 Hz), `navigation` is Close Detail (~3 ft at
 15 Hz), and `idle` is Low Power (~3 ft at 2 Hz). These are test observations,
@@ -291,22 +291,22 @@ The truck is two ESP32s, not one:
 - **Drive board** (port 8080): all motion commands, `/health`, `/telemetry`, `/cmd`, `/config/guard`.
 - **Camera board** (port 81): `/stream` (MJPEG), `/capture` (JPEG), its own `/health`.
 
-When you call `helm vehicle-snapshot`, Helm talks to *both*: the JPEG comes from the camera board and the telemetry comes from the drive board. Either can be down independently. If `telemetry.ok` is `false` but the JPEG arrived, the *drive* board is the problem. If `vehicle-snapshot` fails entirely with a transport error, the *camera* board is the problem (or Helm-UI's shared-cache bridge is wedged).
+When you call `helm vehicle-snapshot`, Helm Scout talks to *both*: the JPEG comes from the camera board and the telemetry comes from the drive board. Either can be down independently. If `telemetry.ok` is `false` but the JPEG arrived, the *drive* board is the problem. If `vehicle-snapshot` fails entirely with a transport error, the *camera* board is the problem (or Helm Scout's shared-cache bridge is wedged).
 
 The user can have you continue with vision-only operation if the drive board is the failure (you can plan motion plans without executing them, narrate the camera). You cannot do anything useful if the camera is down except call `helm state --follow` and `helm cmd` blind.
 
 ---
 
-## The Helm-UI loopback bridge
+## The Helm Scout loopback bridge
 
-If the user has Helm-UI running (the desktop app), `vehicle-snapshot` automatically uses a loopback control plane on `127.0.0.1` to share the camera connection with the live UI. The user sees the frame in the UI at the same moment you receive it in your JSON response. This is intentional — keeps the user in the loop visually while you handle cognition.
+If the user has Helm Scout running (the desktop app), `vehicle-snapshot` automatically uses a loopback control plane on `127.0.0.1` to share the camera connection with the live UI. The user sees the frame in the UI at the same moment you receive it in your JSON response. This is intentional — keeps the user in the loop visually while you handle cognition.
 
-You don't need to do anything to enable this. It's automatic when Helm-UI is running. The `source` field in your response tells you which path was used:
+You don't need to do anything to enable this. It's automatic when Helm Scout is running. The `source` field in your response tells you which path was used:
 
 - `"source": "cache"` — you grabbed from the live MJPEG stream the UI is holding open. Fastest, freshest.
-- `"source": "direct"` — Helm-UI wasn't running, so you went straight to the camera's `/capture`. Slightly slower; if there's another consumer on the camera (very rare), this can stall briefly.
+- `"source": "direct"` — Helm Scout wasn't running, so you went straight to the camera's `/capture`. Slightly slower; if there's another consumer on the camera (very rare), this can stall briefly.
 
-Both are fine. If `source` is `direct` and the user mentioned Helm-UI should be running, that's worth flagging to them.
+Both are fine. If `source` is `direct` and the user mentioned Helm Scout should be running, that's worth flagging to them.
 
 ---
 
@@ -357,7 +357,7 @@ For sustained multimeter microphone checks, use `helm vehicle-mic-clock <id> dat
 Audio and lights (Sensor Board v1.3): `helm vehicle-speaker-play <id> <file>`
 uses local ffmpeg decoding, probes the dedicated core-0 speaker service on port
 83, and falls back to port 82 for older firmware. Source audio is unchanged.
-Helm's Driver panel has Audio and LED script libraries. Multiple LEDs in a
+Helm Scout's Driver panel has Audio and LED script libraries. Multiple LEDs in a
 script line run concurrently with independent colors/timing; lines advance
 when all selected actions finish. Steady on persists between lines/loop repeats,
 Flash alternates on/off, and No Action is a timed pause. Play Loop repeats until

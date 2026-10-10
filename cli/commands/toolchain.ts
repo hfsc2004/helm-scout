@@ -140,7 +140,7 @@ const install: RuntimeCommand = {
 const uninstall: RuntimeCommand = {
   def: {
     name: "toolchain-uninstall",
-    summary: "Remove Helm's private arduino-cli install. mpremote is system-managed; not removed.",
+    summary: "Remove Helm Scout's private arduino-cli install. mpremote is system-managed; not removed.",
     args: [],
     flags: [
       {

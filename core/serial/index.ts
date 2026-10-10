@@ -8,7 +8,7 @@
  * (raspberry-pi-pico, esp32, etc.) by scanning /dev on Linux/macOS and
  * (currently no-op) on Windows.
  *
- * Helm uses this for serial discovery only in v0.1. The actual *driving*
+ * Helm Scout uses this for serial discovery only in v0.1. The actual *driving*
  * of serial-attached vehicles (mpremote, raw REPL, etc.) lands in a later
  * branch when we add a serial vehicle adapter.
  */

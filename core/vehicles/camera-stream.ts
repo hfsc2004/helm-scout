@@ -8,7 +8,7 @@
  * Why: the Elegoo / esp32-camera firmwares are single-threaded HTTP — if a
  * client holds `/stream`, *every* other endpoint (`/capture`, `/health`) on
  * that board blocks until the stream client disconnects. The fix is for
- * Helm itself to hold the single stream connection, parse it once, and
+ * Helm Scout itself to hold the single stream connection, parse it once, and
  * serve every other consumer (renderer `<img>`, CLI snapshot, future LLM
  * planner with vision) out of the cached buffer.
  *

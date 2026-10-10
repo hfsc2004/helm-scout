@@ -12,4 +12,4 @@ The `.js` files in this directory are imported **verbatim** from PSF Core. They 
 - `gpu-detector-common.js` — classification + nvidia-smi parsing (cross-platform)
 - `gpu-detector-{linux-x64,linux-arm64,macos-arm,macos-intel,windows-x64,windows-arm64}.js` — per-platform probes (lspci, nvidia-smi, system_profiler, WMIC)
 - `gpu-select.js` — headless-first NVIDIA selection (display-active GPUs lose ties)
-- `index.ts` — TypeScript surface for the rest of Helm
+- `index.ts` — TypeScript surface for the rest of Helm Scout

@@ -1,6 +1,6 @@
 # Firmware
 
-ESP32 / microcontroller firmware that runs on the physical vehicles PSF Helm controls.
+ESP32 / microcontroller firmware that runs on the physical vehicles Helm Scout controls.
 
 Firmware lives in this repo (not a separate one) so the app and the firmware version together.
 

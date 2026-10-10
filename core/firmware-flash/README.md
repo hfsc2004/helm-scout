@@ -1,6 +1,6 @@
 # Firmware flash
 
-Compile + upload sketches to microcontrollers using Helm's private arduino-cli.
+Compile + upload sketches to microcontrollers using Helm Scout's private arduino-cli.
 
 ## What's here
 
@@ -20,11 +20,11 @@ ground-skidsteer-esp32/
 ```
 
 `vars[]` declares typed inputs. `string`, `secret`, `number`, `boolean`. Missing required vars or wrong types fail loudly — no silent coercion.
-`sketchFiles[]` optionally lists header files beside `sketch.ino`; Helm copies
+`sketchFiles[]` optionally lists header files beside `sketch.ino`; Helm Scout copies
 them into the staged Arduino sketch directory before compiling. Names must be
 plain filenames, not paths. The Sensor Board v1.3 template uses this for its
 boot-chime PCM header.
-If a template has a `src/` directory, Helm also copies that tree into the
+If a template has a `src/` directory, Helm Scout also copies that tree into the
 staged sketch. Arduino compiles source files recursively beneath `src/`; the
 Sensor Board v1.3 template uses this for its bundled VL53L1CB driver.
 

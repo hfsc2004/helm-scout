@@ -22,12 +22,12 @@ import { join } from "node:path";
  *     emitted in JSON output unless the caller explicitly asked for a
  *     "status" view that returns presence only.
  *   - Read on demand, not cached at startup. Token rotation works without
- *     restarting Helm.
+ *     restarting Helm Scout.
  */
 
 const ENV_PATH = join(process.cwd(), ".env");
 
-/** Keys recognized by Helm. Add new ones here so the schema stays explicit. */
+/** Keys recognized by Helm Scout. Add new ones here so the schema stays explicit. */
 export type SecretKey = "HF_TOKEN";
 
 function readDotenv(): Record<string, string> {
@@ -54,7 +54,7 @@ function readDotenv(): Record<string, string> {
 
 function writeDotenv(values: Record<string, string>): void {
   const lines: string[] = [];
-  lines.push("# PSF Helm local secrets. Do not commit. (Already in .gitignore.)");
+  lines.push("# Helm Scout local secrets. Do not commit. (Already in .gitignore.)");
   lines.push("");
   for (const [k, v] of Object.entries(values)) {
     lines.push(`${k}=${v}`);

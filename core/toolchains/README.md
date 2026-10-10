@@ -1,10 +1,10 @@
 # Toolchains
 
-Helm's private toolchains for flashing microcontrollers.
+Helm Scout's private toolchains for flashing microcontrollers.
 
 ## Architectural rule
 
-Like Helm's private Ollama, toolchains here are **isolated** — they don't share state with whatever the user has on their machine.
+Like Helm Scout's private Ollama, toolchains here are **isolated** — they don't share state with whatever the user has on their machine.
 
 - **arduino-cli** runs against `<dataDir>/toolchains/arduino-cli/{config,data,downloads,user}` via `ARDUINO_*` env vars. It never reads or writes `~/.arduino15`.
 - **mpremote** is detected from the user's system Python (no isolation needed; mpremote itself doesn't keep persistent state).

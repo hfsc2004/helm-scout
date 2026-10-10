@@ -34,7 +34,7 @@ const command: RuntimeCommand = {
       name: "helm",
       version: readVersion(),
       description:
-        "PSF Helm CLI: the natural-language helm for your robot — or your drone.",
+        "Helm Scout CLI: the natural-language helm for your robot — or your drone.",
       globalFlags: GLOBAL_FLAGS,
       commands: all().map((c) => c.def),
     };

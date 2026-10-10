@@ -24,7 +24,7 @@ Plus one tiny in-tree shim:
 
 ## TypeScript surface
 
-`index.ts` exposes typed `downloadModel`, `cancelDownload`, and `hf.*` for the rest of Helm. Customers never import the `.js` files directly.
+`index.ts` exposes typed `downloadModel`, `cancelDownload`, and `hf.*` for the rest of Helm Scout. Customers never import the `.js` files directly.
 
 ## HF token
 

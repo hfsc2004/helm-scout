@@ -6,12 +6,12 @@ import { runCommandAsync } from "../process.js";
 import { arduinoCliPaths, buildArduinoCliEnv } from "./env.js";
 
 /**
- * Where Helm should look for arduino-cli.
+ * Where Helm Scout should look for arduino-cli.
  *
  * Order:
- *   1. Helm's managed binary at <dataDir>/toolchains/arduino-cli/arduino-cli
+ *   1. Helm Scout's managed binary at <dataDir>/toolchains/arduino-cli/arduino-cli
  *      (preferred — fully isolated env).
- *   2. System arduino-cli on PATH (still uses Helm's isolated env, so the
+ *   2. System arduino-cli on PATH (still uses Helm Scout's isolated env, so the
  *      user's ~/.arduino15 is untouched).
  *   3. null — caller should prompt the user to install via
  *      `helm toolchain-install --target arduino-cli --confirm`.

@@ -14,16 +14,16 @@ import {
 } from "./process-utils.js";
 
 /**
- * Manager for Helm's private Ollama instance.
+ * Manager for Helm Scout's private Ollama instance.
  *
  * Lifecycle: install (download binary) → start (spawn under BMOC) →
  * chat/use → stop (BMOC closes the session, releases the port).
  *
  * Architectural rules:
- *   1. Helm never talks to the system Ollama on 11434. Period.
+ *   1. Helm Scout never talks to the system Ollama on 11434. Period.
  *   2. The Ollama process is registered with BMOC; nothing here calls
  *      `child_process.spawn` and walks away.
- *   3. Before spawning, we check the port is free OR held by a stale Helm
+ *   3. Before spawning, we check the port is free OR held by a stale Helm Scout
  *      process we can clean up. If a foreign process holds the port, we
  *      refuse to start.
  */
@@ -76,13 +76,13 @@ export async function start(opts: {
     );
   }
 
-  // Defensive: clean up any stale Helm Ollama processes from a prior crash.
+  // Defensive: clean up any stale Helm Scout Ollama processes from a prior crash.
   await killStaleHelmOllama(HELM_OLLAMA_PORT);
 
   const claim = await portIsClaimableByHelm(HELM_OLLAMA_PORT);
   if (!claim.claimable) {
     throw new Error(
-      `Cannot start Helm Ollama: ${claim.reason}. Helm only manages its own Ollama on port ${HELM_OLLAMA_PORT}; it will not touch any other process.`
+      `Cannot start Helm Scout Ollama: ${claim.reason}. Helm Scout only manages its own Ollama on port ${HELM_OLLAMA_PORT}; it will not touch any other process.`
     );
   }
 
@@ -111,7 +111,7 @@ export async function start(opts: {
   };
   running = ref;
 
-  // Surface stderr to Helm's stderr (not stdout) so NDJSON output stays clean.
+  // Surface stderr to Helm Scout's stderr (not stdout) so NDJSON output stays clean.
   child.stderr?.on("data", (chunk) => {
     process.stderr.write(`[ollama] ${chunk}`);
   });

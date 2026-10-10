@@ -9,7 +9,7 @@ const setAudio: RuntimeCommand = {
   def: {
     name: "vehicle-audio-set",
     summary:
-      "Attach a roving-microphone sidecar to a vehicle. Helm plays its PCM stream locally; nothing leaves your LAN.",
+      "Attach a roving-microphone sidecar to a vehicle. Helm Scout plays its PCM stream locally; nothing leaves your LAN.",
     args: [
       {
         name: "id",

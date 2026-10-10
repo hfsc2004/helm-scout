@@ -33,7 +33,7 @@ function modelNameFromFilename(filename: string): string {
 const list: RuntimeCommand = {
   def: {
     name: "model-list",
-    summary: "List models registered with Helm's private Ollama.",
+    summary: "List models registered with Helm Scout's private Ollama.",
     args: [],
     flags: [],
     streams: false,
@@ -48,7 +48,7 @@ const list: RuntimeCommand = {
     } catch (err) {
       emit({
         error: err instanceof Error ? err.message : String(err),
-        hint: "Is Helm's private Ollama running? Try `helm ollama-start`.",
+        hint: "Is Helm Scout's private Ollama running? Try `helm ollama-start`.",
       });
       return 1;
     }
@@ -59,7 +59,7 @@ const download: RuntimeCommand = {
   def: {
     name: "model-download",
     summary:
-      "Download a .gguf model from huggingface.co (or any direct URL) and register it with Helm's private Ollama.",
+      "Download a .gguf model from huggingface.co (or any direct URL) and register it with Helm Scout's private Ollama.",
     args: [
       {
         name: "url",
@@ -103,7 +103,7 @@ const download: RuntimeCommand = {
     }
     if (!ollamaManager.isRunning()) {
       emit({
-        error: "Helm's private Ollama is not running.",
+        error: "Helm Scout's private Ollama is not running.",
         hint: "Run `helm ollama-start` first (and `helm ollama-install --confirm` if you haven't yet).",
       });
       return 1;
@@ -162,7 +162,7 @@ const download: RuntimeCommand = {
 const remove: RuntimeCommand = {
   def: {
     name: "model-remove",
-    summary: "Remove a model from Helm's private Ollama by name.",
+    summary: "Remove a model from Helm Scout's private Ollama by name.",
     args: [
       {
         name: "name",

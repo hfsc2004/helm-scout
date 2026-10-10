@@ -11,7 +11,7 @@
    * connection per vehicle held by the Electron main process), polling at
    * ~15 fps. This is what lets the CLI's `vehicle-snapshot` share frames
    * with the live UI — the camera firmware can only serve one HTTP client
-   * at a time, so everything in Helm shares one connection.
+   * at a time, so everything in Helm Scout shares one connection.
    */
 
   const POLL_INTERVAL_MS = 66;        // ~15 fps; the camera is the bottleneck

@@ -1,6 +1,6 @@
 # CLI (`helm`)
 
-The agent-first command-line surface for PSF Helm. Subcommands are designed for frontier models and scripts, not primarily for humans.
+The agent-first command-line surface for Helm Scout. Subcommands are designed for frontier models and scripts, not primarily for humans.
 
 ## Design rules
 
@@ -24,14 +24,14 @@ The agent-first command-line surface for PSF Helm. Subcommands are designed for 
 
 ## PSF Sensor Board v1.3 speaker
 
-With `ffmpeg` installed on the Helm computer, play a local audio file through
+With `ffmpeg` installed on the Helm Scout computer, play a local audio file through
 the v1.3 board's speaker:
 
 ```bash
 npm run helm -- vehicle-speaker-play <vehicle-id> <audio-file>
 ```
 
-Helm decodes to 16 kHz signed 16-bit stereo PCM and streams it to the board's
+Helm Scout decodes to 16 kHz signed 16-bit stereo PCM and streams it to the board's
 port-82 `/speaker-pcm` endpoint. The board buffers 32 KiB and applies
 backpressure; the entire audio file is not loaded into board memory. By
 default the command derives the host from the vehicle's camera URL; use
@@ -40,7 +40,7 @@ registered as Sensor Board v1.3. See the [firmware bench notes](../firmware/temp
 
 ## PSF Sensor Board v1.3 ToF modes
 
-The board starts both single-zone ToF sensors in automatic mode. While Helm's
+The board starts both single-zone ToF sensors in automatic mode. While Helm Scout's
 Drive panel (or another client) polls `/ranges`, an invalid return lasting
 about two seconds makes that sensor try Short, Medium, and Long in sequence.
 A valid return holds its current mode. Agents can inspect or override the
@@ -61,7 +61,7 @@ or the board reboots. The 8×8 wide sensor is unaffected.
 The SR Front sensor supports runtime 4×4/8×8 switching. It is separate from
 the LR Front and Rear VL53L1CB sensors controlled by `vehicle-tof-mode`.
 
-| Profile | Helm display name | Grid | Default / allowed Hz | Observed range at default Hz | Ranging |
+| Profile | Helm Scout display name | Grid | Default / allowed Hz | Observed range at default Hz | Ranging |
 | --- | --- | --- | --- | --- | --- |
 | `detail` | Balanced Detail | 8×8 | 10 | ~4 ft | Continuous, strongest target |
 | `navigation` | Close Detail | 8×8 | 15 / 10–15 | ~3 ft | Continuous, strongest target |
@@ -96,7 +96,7 @@ travel, Fast for faster motion, Idle when unused, and Inspect for diagnosing
 returns. Profiles are explicit choices; motor commands do not change them.
 The board boots into Low Power (`idle`): 4×4 at 2 Hz, autonomous ranging,
 with a 5 ms integration time. Runtime changes last until changed or rebooted.
-Updated sensor-board firmware is required; Helm does not flash it automatically.
+Updated sensor-board firmware is required; Helm Scout does not flash it automatically.
 
 ## PSF Sensor Board v1.3 relative orientation
 

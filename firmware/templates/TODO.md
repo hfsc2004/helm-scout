@@ -1,6 +1,6 @@
 # Template TODO
 
-Sketches imported from PSF Core but not yet converted into Helm templates. Raw sources live at `firmware/raw-from-core-ce/`. The format we're targeting is documented in `core/firmware-flash/README.md`.
+Sketches imported from PSF Core but not yet converted into Helm Scout templates. Raw sources live at `firmware/raw-from-core-ce/`. The format we're targeting is documented in `core/firmware-flash/README.md`.
 
 ## How to convert a raw sketch into a template
 
@@ -56,7 +56,7 @@ Same FQBN/core as the truck.
 
 ### ~~`esp32s3-camera-elegoo`~~ — superseded by `video-esp32-s3`
 
-The vendor sketch in `firmware/raw-from-core-ce/ESP32-S3-WROOM-1-Camera/` was Elegoo-specific (AP-mode, proprietary HTML control panel, vendor `app_httpd.cpp`). Rather than convert that wholesale, we wrote a clean PSF-original STA-mode streamer at `firmware/templates/video-esp32-s3/` that targets the three endpoints Helm actually consumes (`/stream`, `/capture`, `/health`) and ships with three swappable pin profiles (`ai_thinker_s3`, `esp32s3_eye`, `elegoo_s3`).
+The vendor sketch in `firmware/raw-from-core-ce/ESP32-S3-WROOM-1-Camera/` was Elegoo-specific (AP-mode, proprietary HTML control panel, vendor `app_httpd.cpp`). Rather than convert that wholesale, we wrote a clean PSF-original STA-mode streamer at `firmware/templates/video-esp32-s3/` that targets the three endpoints Helm Scout actually consumes (`/stream`, `/capture`, `/health`) and ships with three swappable pin profiles (`ai_thinker_s3`, `esp32s3_eye`, `elegoo_s3`).
 
 Still open from the original analysis (not blockers for the dual-board work, but worth tracking):
 

@@ -1,0 +1,150 @@
+model = "gpt-6.1-sol"
+model_reasoning_effort = "low"
+
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
+
+[projects."/media/user/Third_4TB/PSF/helm-scout"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/GSN_Offline/GSN_Offline_1.0.35b_WORK"]
+trust_level = "untrusted"
+
+[projects."/media/user/Third_4TB/GSN_Offline/GSN_Offline_1.0.37b_WORK"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/GSN_Offline/GSN_Offline_1.0.38b_WORK"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/GSN_Offline/GSN_Offline_1.1.2_WORK"]
+trust_level = "trusted"
+
+[projects."/media/user/Secondary_1TB/GSN/GSN_Offline_1.1.1"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/core_dev/WORK"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/core-enterprise"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/core-ce"]
+trust_level = "trusted"
+
+[projects."/home/user/pi"]
+trust_level = "trusted"
+
+[projects."/home/user/Documents/Ligandus/060925"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/Core-PCB"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/Workbench"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/helm-pcb"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/TabletopAI-Simulator"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/MagicLeap"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/kT-emulator"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/XRDForge"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/helm-ce"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/CivOne"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/Roboflow/inference"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/Sensor_Board/v1.2"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/Sensor_Board/v1.3"]
+trust_level = "trusted"
+
+[projects."/media/user/seagate_USB/Videos/Movies"]
+trust_level = "trusted"
+
+[projects."/home/user/Documents/Codex/2026-09-16/referenced-chatgpt-conversation-this-is-an"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/psf-helm"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/Projects/test/helm"]
+trust_level = "trusted"
+
+[projects."/media/user/Third_4TB/PSF/NovelPassages"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.2-codex" = "gpt-5.3-codex"
+"gpt-5.3-codex" = "gpt-5.4"
+"gpt-5.5" = "gpt-5.6-sol"
+
+[tui]
+screen_reader_detection_done = true
+
+[tui.model_availability_nux]
+"gpt-5.5" = 4
+"gpt-5.6-sol" = 4
+gpt-6-astra = 4
+"gpt-6.1-sol" = 4
+
+[desktop]
+followUpQueueMode = "steer"
+conversationDetailMode = "STEPS_PROSE"
+sansFontSize = 14
+codeFontSize = 13
+ambient-suggestions-enabled = false
+
+[marketplaces.openai-bundled]
+source_type = "local"
+source = "/home/user/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[mcp_servers.node_repl]
+args = []
+command = "/usr/lib/chatgpt/resources/cua_node/bin/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = "/usr/lib/chatgpt/resources/cua_node/lib/node_modules"
+NODE_REPL_NODE_PATH = "/usr/lib/chatgpt/resources/cua_node/bin/node"
+NODE_REPL_TRUSTED_CODE_PATHS = "/home/user/.codex:/usr/lib/chatgpt/resources/cua_node/lib/node_modules"
+CODEX_HOME = "/home/user/.codex"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_TINYSKY_ENABLED = "0"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.908.70816"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/user/.codex/plugins/cache/openai-bundled/browser/26.908.70816/scripts/browser-service.mjs"}'
+CODEX_CLI_PATH = "/usr/lib/chatgpt/resources/codex"
+
+[mcp_servers.cua_repl]
+command = "/usr/lib/chatgpt/ChatGPT"
+enabled = false

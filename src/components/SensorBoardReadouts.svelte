@@ -307,7 +307,7 @@
   <div class="readout"><span>Roll (upright +)</span><strong>{angle(snapshot?.imu?.orientationDeg, 0, -1)}</strong></div>
   <div class="readout"><span>Pitch</span><strong>{angle(snapshot?.imu?.orientationDeg, 1)}</strong></div>
   <div class="readout"><span>Yaw</span><strong>{angle(snapshot?.imu?.orientationDeg, 2)}</strong></div>
-  <p class="hint">Roll sign follows the tested upright direction in Helm; raw chip-axis data is unchanged. Yaw can drift without a compass.</p>
+  <p class="hint">Roll sign follows the tested upright direction in Helm Scout; raw chip-axis data is unchanged. Yaw can drift without a compass.</p>
 
   <h3>Motion rate <small>(chip axes)</small></h3>
   <div class="readout"><span>Accel X</span><strong>{axis(snapshot?.imu?.accelG, 0, "g")}</strong></div>

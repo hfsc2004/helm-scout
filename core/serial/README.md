@@ -12,7 +12,7 @@ Each result includes a `boardHint` (`raspberry-pi-pico`, `esp32`, or empty) infe
 
 ## TypeScript surface
 
-`index.ts` exposes typed `listSerialPorts()` and `resolveSerialPort()`. The rest of Helm imports from here, never directly from the `.js`.
+`index.ts` exposes typed `listSerialPorts()` and `resolveSerialPort()`. The rest of Helm Scout imports from here, never directly from the `.js`.
 
 ## What this branch ships
 

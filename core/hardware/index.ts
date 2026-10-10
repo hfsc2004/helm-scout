@@ -4,7 +4,7 @@
  * Hardware detection — verbatim import from PSF Core.
  *
  * The underlying .js files are kept exactly as written and proven there.
- * This file is the thin TypeScript surface the rest of Helm uses.
+ * This file is the thin TypeScript surface the rest of Helm Scout uses.
  *
  * If you find a bug in the detector, fix it in the .js file directly. Do not
  * "modernize" the implementation; it works.

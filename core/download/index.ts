@@ -7,7 +7,7 @@
  * handle HTTP/HTTPS + wget fallback, HF Bearer auth, SHA-256 checksumming,
  * multi-shard GGUF reassembly, and the HF REST API. Do not modify them.
  *
- * Helm uses these to download model files. The HF token (if present) lives
+ * Helm Scout uses these to download model files. The HF token (if present) lives
  * in the project's .env (see core/secrets.ts) and is attached as
  * `Authorization: Bearer <token>` only on requests to huggingface.co.
  */
@@ -30,9 +30,9 @@ export interface DownloadOptions {
   url: string;
   /** Filename to save as. If omitted, derived from the URL. */
   filename?: string;
-  /** Directory to download into. Helm sets this; callers usually don't. */
+  /** Directory to download into. Helm Scout sets this; callers usually don't. */
   destinationDir: string;
-  /** Bearer token for gated downloads. Helm sources from .env automatically. */
+  /** Bearer token for gated downloads. Helm Scout sources from .env automatically. */
   hfToken?: string;
   /** Expected SHA-256, if known. Verified post-download. */
   expectedSha256?: string;

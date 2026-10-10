@@ -8,8 +8,8 @@ import { paths } from "../../paths.js";
 /**
  * Isolated arduino-cli environment.
  *
- * Same isolation pattern as Helm's private Ollama: never touches the user's
- * ~/.arduino15. Helm's arduino-cli reads/writes config, downloads cores, and
+ * Same isolation pattern as Helm Scout's private Ollama: never touches the user's
+ * ~/.arduino15. Helm Scout's arduino-cli reads/writes config, downloads cores, and
  * stores user libraries entirely under <dataDir>/toolchains/arduino-cli/.
  *
  * If a system arduino-cli is also installed, the user's setup is unaffected.

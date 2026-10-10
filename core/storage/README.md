@@ -1,6 +1,6 @@
 # Storage
 
-The single owner of all disk I/O in PSF Helm.
+The single owner of all disk I/O in Helm Scout.
 
 Nothing else writes to disk. Every persistent write goes through here, declares its category, and respects the cap defined in `limits.ts`. If a new category is needed, add it to both this module and to `limits.ts` — no ad-hoc files.
 

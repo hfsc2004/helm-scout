@@ -17,7 +17,7 @@ function readVersion(): string {
 const command: RuntimeCommand = {
   def: {
     name: "version",
-    summary: "Print the PSF Helm version.",
+    summary: "Print the Helm Scout version.",
     args: [],
     flags: [],
     streams: false,

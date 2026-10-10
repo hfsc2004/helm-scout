@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PSF Helm — Driver View Mockup v2</title>
+    <style>
+      :root {
+        --bg: #0f1419;
+        --fg: #e6edf3;
+        --muted: #8b949e;
+        --accent: #1f6feb;
+        --accent-soft: #2d7bf0;
+        --danger: #f85149;
+        --danger-dark: #b62324;
+        --surface: #161b22;
+        --surface-2: #1c232c;
+        --border: #30363d;
+        --good: #3fb950;
+        --warn: #d29922;
+        --agent: #a371f7;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+      }
+
+      .app {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100vh;
+      }
+
+      /* ---------- Header ---------- */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      header .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      header .brand-row img {
+        height: 36px;
+        width: auto;
+      }
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.85rem;
+      }
+      .pill .dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--good);
+        box-shadow: 0 0 6px var(--good);
+      }
+      .pill .glyph {
+        font-size: 0.95rem;
+        line-height: 1;
+      }
+      .pill .glyph.agent { color: var(--agent); }
+      .pill select {
+        background: transparent;
+        border: none;
+        color: var(--fg);
+        font-family: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding-right: 0.25rem;
+      }
+      .pill select:focus { outline: none; }
+      .pill .meta {
+        color: var(--muted);
+      }
+      header .right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .icon-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 0.4rem 0.7rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .icon-btn:hover { color: var(--fg); border-color: var(--accent); }
+
+      /* ---------- Main ---------- */
+      main {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        overflow: hidden;
+      }
+
+      .stage {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        background: #000;
+      }
+
+      .camera {
+        position: relative;
+        flex: 1 1 auto;
+        background:
+          radial-gradient(ellipse at 30% 20%, #2a3038 0%, #0a0c10 60%),
+          repeating-linear-gradient(45deg, #14181f 0 4px, #0e1218 4px 8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .camera-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .camera-label {
+        position: absolute;
+        top: 0.75rem; left: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        background: rgba(0,0,0,0.4);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+      .camera-fps {
+        position: absolute;
+        top: 0.75rem; right: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        background: rgba(0,0,0,0.4);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+      }
+      .camera-placeholder {
+        text-align: center;
+        color: var(--muted);
+      }
+      .camera-placeholder .big { font-size: 3rem; opacity: 0.3; }
+      .camera-placeholder .small { font-size: 0.8rem; margin-top: 0.5rem; }
+
+      .camera-corner-btns {
+        position: absolute;
+        bottom: 1.25rem;
+        left: 1.25rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .camera-corner-btns button {
+        background: rgba(0,0,0,0.55);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+      }
+      .camera-corner-btns button:hover { border-color: var(--accent); }
+
+      .stop-btn {
+        position: absolute;
+        bottom: 1.25rem;
+        right: 1.25rem;
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, var(--danger), var(--danger-dark));
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: 0.1em;
+        border: 3px solid #ff8a82;
+        box-shadow: 0 0 16px rgba(248,81,73,0.45), inset 0 -4px 8px rgba(0,0,0,0.3);
+        cursor: pointer;
+      }
+
+      .intent-bar {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+      }
+      .intent-input {
+        flex: 1 1 auto;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        padding: 0.65rem 0.85rem;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+      .intent-input::placeholder { color: var(--muted); font-style: italic; }
+      .intent-input:focus { outline: none; border-color: var(--accent); }
+      .send-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 0 1.25rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .send-btn:hover { background: var(--accent-soft); }
+      .mic-btn {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        width: 44px;
+        border-radius: 6px;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+
+      /* ---------- Right rail ---------- */
+      .rail {
+        background: var(--surface);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .rail section {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .rail h3 {
+        margin: 0 0 0.6rem 0;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+
+      .dpad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+        max-width: 220px;
+        margin: 0 auto;
+      }
+      .dpad button {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        padding: 0.85rem 0;
+        border-radius: 6px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      .dpad button:hover { border-color: var(--accent); color: var(--accent-soft); }
+      .dpad button.spacer { visibility: hidden; }
+      .dpad .stop-mini {
+        background: var(--danger-dark);
+        color: white;
+        border-color: var(--danger);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+
+      .readouts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.4rem 1rem;
+      }
+      .readout {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.85rem;
+      }
+      .readout .label { color: var(--muted); font-size: 0.7rem; }
+      .readout .val { font-variant-numeric: tabular-nums; }
+      .readout.good .val { color: var(--good); }
+      .readout.warn .val { color: var(--warn); }
+
+      .snapshots {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.4rem;
+      }
+      .snap {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        background:
+          radial-gradient(ellipse at 30% 20%, #2a3038 0%, #0a0c10 60%),
+          repeating-linear-gradient(45deg, #14181f 0 3px, #0e1218 3px 6px);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .snap:hover { border-color: var(--accent); }
+      .snap-meta {
+        position: absolute;
+        bottom: 2px;
+        left: 4px;
+        right: 4px;
+        font-size: 0.6rem;
+        color: var(--muted);
+        background: rgba(0,0,0,0.55);
+        padding: 1px 4px;
+        border-radius: 3px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .snap-path {
+        margin-top: 0.5rem;
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        word-break: break-all;
+      }
+
+      .activity {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.75rem;
+        color: var(--muted);
+        max-height: 140px;
+        overflow-y: auto;
+        line-height: 1.5;
+      }
+      .activity .line { white-space: nowrap; }
+      .activity .ts { color: var(--border); margin-right: 0.5rem; }
+      .activity .kind-cmd { color: var(--accent-soft); }
+      .activity .kind-ok  { color: var(--good); }
+      .activity .kind-stop { color: var(--danger); }
+      .activity .kind-snap { color: var(--agent); }
+
+      footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 1rem;
+        font-size: 0.7rem;
+        color: var(--muted);
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+      }
+      footer .canary {
+        display: inline-flex;
+        gap: 0.4rem;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+
+      <header>
+        <div class="brand-row">
+          <img src="../../public/logo.png" alt="PSF Helm" />
+          <div class="pill">
+            <span class="dot"></span>
+            <span>truck-01</span>
+            <span class="meta">·</span>
+            <span class="meta">172.20.0.15</span>
+          </div>
+          <div class="pill">
+            <span class="glyph agent">🧠</span>
+            <select>
+              <option>Gemma 3:4B-IT-MM</option>
+              <option>Qwen2.5-VL-7B</option>
+              <option>Llava-1.6-Mistral-7B</option>
+            </select>
+          </div>
+        </div>
+        <div class="right">
+          <button class="icon-btn">Pair</button>
+          <button class="icon-btn">Settings</button>
+        </div>
+      </header>
+
+      <main>
+        <div class="stage">
+          <div class="camera">
+            <div class="camera-placeholder">
+              <div class="big">▶</div>
+              <div class="small">camera feed — 172.20.0.16:81/stream</div>
+            </div>
+            <div class="camera-overlay">
+              <div class="camera-label">CAM · LIVE</div>
+              <div class="camera-fps">14 fps · 800×600</div>
+            </div>
+            <div class="camera-corner-btns">
+              <button title="Take snapshot (saved locally)">📷 Snapshot</button>
+            </div>
+            <button class="stop-btn" title="Emergency stop">STOP</button>
+          </div>
+
+          <div class="intent-bar">
+            <button class="mic-btn" title="Push to talk">🎙</button>
+            <input
+              class="intent-input"
+              type="text"
+              placeholder="tell the truck what to do — e.g. drive forward 2 seconds"
+              value=""
+            />
+            <button class="send-btn">Send</button>
+          </div>
+        </div>
+
+        <aside class="rail">
+
+          <section>
+            <h3>Manual</h3>
+            <div class="dpad">
+              <button class="spacer"></button>
+              <button>▲</button>
+              <button class="spacer"></button>
+
+              <button>◀</button>
+              <button class="stop-mini">STOP</button>
+              <button>▶</button>
+
+              <button class="spacer"></button>
+              <button>▼</button>
+              <button class="spacer"></button>
+            </div>
+          </section>
+
+          <section>
+            <h3>Vehicle State</h3>
+            <div class="readouts">
+              <div class="readout good">
+                <span class="label">Link</span>
+                <span class="val">Online · -58 dBm</span>
+              </div>
+              <div class="readout good">
+                <span class="label">Deadman</span>
+                <span class="val">12 ms ago</span>
+              </div>
+              <div class="readout">
+                <span class="label">Left motor</span>
+                <span class="val">0</span>
+              </div>
+              <div class="readout">
+                <span class="label">Right motor</span>
+                <span class="val">0</span>
+              </div>
+              <div class="readout good">
+                <span class="label">Battery</span>
+                <span class="val">7.8 V</span>
+              </div>
+              <div class="readout warn">
+                <span class="label">Front IR</span>
+                <span class="val">1420</span>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h3>Snapshots</h3>
+            <div class="snapshots">
+              <div class="snap"><div class="snap-meta"><span>14:02:11</span><span>↗</span></div></div>
+              <div class="snap"><div class="snap-meta"><span>14:01:42</span><span>↗</span></div></div>
+              <div class="snap"><div class="snap-meta"><span>14:00:18</span><span>↗</span></div></div>
+            </div>
+            <div class="snap-path">./snapshots/truck-01/</div>
+          </section>
+
+          <section>
+            <h3>Activity</h3>
+            <div class="activity">
+              <div class="line"><span class="ts">14:02:11</span><span class="kind-cmd">cmd</span> drive forward 2 s</div>
+              <div class="line"><span class="ts">14:02:11</span><span class="kind-ok">ok</span> plan: fwd 160 · 2000 ms</div>
+              <div class="line"><span class="ts">14:02:11</span><span class="kind-snap">snap</span> frame_00042.jpg</div>
+              <div class="line"><span class="ts">14:02:13</span><span class="kind-ok">ok</span> complete (2003 ms)</div>
+              <div class="line"><span class="ts">14:01:42</span><span class="kind-cmd">cmd</span> turn left 30°</div>
+              <div class="line"><span class="ts">14:00:18</span><span class="kind-stop">stop</span> user pressed STOP</div>
+              <div class="line"><span class="ts">14:00:02</span><span class="kind-ok">ok</span> paired truck-01</div>
+            </div>
+          </section>
+
+        </aside>
+      </main>
+
+      <footer>
+        <span>PSF Helm v0.1 · gemma-3-4b-it-mm.gguf</span>
+        <span class="canary">Local only · Vehicle state stays on your machine 🐤</span>
+        <span>Copyright © 2026 Pseudo Science Fiction</span>
+      </footer>
+
+    </div>
+  </body>
+</html>

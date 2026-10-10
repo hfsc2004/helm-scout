@@ -161,7 +161,7 @@ export interface SensorBoardSnapshotResponse {
 
 // ---------------------------------------------------------------------------
 // Camera stream cache (one upstream connection per vehicle, shared by every
-// consumer in this Helm process — renderer, CLI snapshot, future planner).
+// consumer in this Helm Scout process — renderer, CLI snapshot, future planner).
 // ---------------------------------------------------------------------------
 
 export interface VehicleCameraStreamOpenRequest {

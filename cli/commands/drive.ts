@@ -13,7 +13,7 @@ const drive: RuntimeCommand = {
   def: {
     name: "drive",
     summary:
-      "Drive a vehicle by natural-language intent. Helm plans, validates, then sends a single command.",
+      "Drive a vehicle by natural-language intent. Helm Scout plans, validates, then sends a single command.",
     args: [
       {
         name: "id",
@@ -33,7 +33,7 @@ const drive: RuntimeCommand = {
         name: "model",
         kind: "string",
         default: DEFAULT_PLANNER_MODEL,
-        description: "Model to plan with. Must be registered in Helm's private Ollama.",
+        description: "Model to plan with. Must be registered in Helm Scout's private Ollama.",
       },
       {
         name: "dry-run",
@@ -89,7 +89,7 @@ const drive: RuntimeCommand = {
     }
     if (!ollamaManager.isRunning()) {
       emit({
-        error: "Helm's private Ollama is not running.",
+        error: "Helm Scout's private Ollama is not running.",
         hint: "Run `helm ollama-start` first.",
       });
       return 1;

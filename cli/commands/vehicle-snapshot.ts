@@ -16,7 +16,7 @@ import { hasDriveControl } from "../../shared/vehicle-contract.js";
  *
  * Two paths:
  *
- * 1. If a Helm-UI process is running, its loopback control plane is
+ * 1. If a Helm Scout process is running, its loopback control plane is
  *    advertised in <dataDir>/control-plane.json. We GET
  *    /v1/vehicles/<id>/snapshot from it — the UI's main process already
  *    has the one upstream connection to the camera open, and serves us
@@ -26,7 +26,7 @@ import { hasDriveControl } from "../../shared/vehicle-contract.js";
  *    stream, "direct" when the main process had to issue its own
  *    /capture (no stream was open).
  *
- * 2. Otherwise — Helm-UI isn't running — we hit the camera's /capture
+ * 2. Otherwise — Helm Scout isn't running — we hit the camera's /capture
  *    endpoint directly. Same behavior as before the control plane.
  *
  * NOTE: most ESP32-S3 camera firmwares are single-threaded HTTP. Option (2)
@@ -118,7 +118,7 @@ const vehicleSnapshot: RuntimeCommand = {
         kind: "boolean",
         default: false,
         description:
-          "Skip the running Helm-UI's loopback control plane; always hit /capture directly.",
+          "Skip the running Helm Scout's loopback control plane; always hit /capture directly.",
       },
       {
         name: "no-telemetry",
@@ -193,7 +193,7 @@ const vehicleSnapshot: RuntimeCommand = {
     let contentType: string;
     let source: "cache" | "direct" = "direct";
 
-    // Prefer the running Helm-UI's loopback control plane if it answers.
+    // Prefer the running Helm Scout's loopback control plane if it answers.
     const bridgeDesc = skipBridge ? null : await cp.probe(500);
 
     if (bridgeDesc) {

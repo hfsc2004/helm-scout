@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
 /**
- * Storage limits. Every persistent thing in PSF Helm is capped.
+ * Storage limits. Every persistent thing in Helm Scout is capped.
  *
  * If you find yourself wanting to write to disk and there isn't a category
  * here, add one. Do not bypass storage limits.

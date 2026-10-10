@@ -10,7 +10,7 @@ const status: RuntimeCommand = {
   def: {
     name: "ollama-status",
     summary:
-      "Report Helm's private Ollama state. Helm never touches the system Ollama on 11434.",
+      "Report Helm Scout's private Ollama state. Helm Scout never touches the system Ollama on 11434.",
     args: [],
     flags: [],
     streams: false,
@@ -27,7 +27,7 @@ const install: RuntimeCommand = {
   def: {
     name: "ollama-install",
     summary:
-      "Download Helm's private Ollama binary from ollama.com. Opt-in network call; one-time.",
+      "Download Helm Scout's private Ollama binary from ollama.com. Opt-in network call; one-time.",
     args: [],
     flags: [
       {
@@ -78,14 +78,14 @@ const uninstall: RuntimeCommand = {
   def: {
     name: "ollama-uninstall",
     summary:
-      "Remove Helm's private Ollama (binary + libraries + models). Reinstallable.",
+      "Remove Helm Scout's private Ollama (binary + libraries + models). Reinstallable.",
     args: [],
     flags: [
       {
         name: "confirm",
         kind: "boolean",
         default: false,
-        description: "Required. Removes all Helm-private Ollama files.",
+        description: "Required. Removes all Helm Scout-private Ollama files.",
       },
     ],
     streams: false,
@@ -113,7 +113,7 @@ const uninstall: RuntimeCommand = {
 const start: RuntimeCommand = {
   def: {
     name: "ollama-start",
-    summary: "Start Helm's private Ollama instance on its private port.",
+    summary: "Start Helm Scout's private Ollama instance on its private port.",
     args: [],
     flags: [
       {
@@ -156,7 +156,7 @@ const start: RuntimeCommand = {
 const stop: RuntimeCommand = {
   def: {
     name: "ollama-stop",
-    summary: "Stop Helm's private Ollama. Never touches the system Ollama.",
+    summary: "Stop Helm Scout's private Ollama. Never touches the system Ollama.",
     args: [],
     flags: [],
     streams: false,

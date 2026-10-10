@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
 /**
- * PSF Helm CLI entrypoint.
+ * Helm Scout CLI entrypoint.
  *
  * Agent-first surface: structured output, NDJSON streams, distinct exit codes,
  * machine-introspectable schema via `helm describe`.

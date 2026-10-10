@@ -13,7 +13,7 @@
   <header>
     <div class="top">
       <div class="brand">
-        <img src="/logo.png" alt="PSF Helm" />
+        <img src="/logo.png" alt="Helm Scout" />
       </div>
       <div class="spacer"></div>
       {#if $activeView === "drive"}
@@ -69,7 +69,7 @@
     display: inline-flex;
     align-items: center;
     padding: 0.35rem 0.85rem;
-    background: #f4f1ea;
+    background: #ffffff;
     border: 1px solid #d4cfc4;
     border-radius: 999px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
@@ -81,52 +81,6 @@
     display: block;
     position: relative;
     z-index: 1;
-  }
-  /* Soft pulse: a faint ring expands from the center of the capsule outward,
-     like a single drop landing on a still pond. Used radial-gradient with
-     opacity scale so it grows + fades simultaneously. */
-  .brand::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(
-      circle at 20% 50%,
-      transparent 0%,
-      transparent 28%,
-      rgba(40, 70, 110, 0.35) 38%,
-      transparent 50%,
-      transparent 100%
-    );
-    transform-origin: 20% 50%;
-    mix-blend-mode: multiply;
-    transform: scale(0.2);
-    opacity: 0;
-    animation: brand-pulse 8s ease-out infinite;
-    pointer-events: none;
-    z-index: 2;
-  }
-  @keyframes brand-pulse {
-    0% {
-      transform: scale(0.2);
-      opacity: 0;
-    }
-    8% {
-      opacity: 0.9;
-    }
-    35% {
-      transform: scale(2.2);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(2.2);
-      opacity: 0;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .brand::after {
-      animation: none;
-    }
   }
   .spacer {
     flex: 1 1 auto;

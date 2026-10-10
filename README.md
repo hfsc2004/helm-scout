@@ -1,21 +1,21 @@
 <div align="center">
-  <img src="public/logo.png" alt="PSF Helm" width="360">
+  <img src="public/logo.png" alt="Helm Scout" width="360">
   <p><em>Drive your robot truck — or fly your drone — with controls, or let an LLM drive it for you.</em></p>
 </div>
 
-PSF Helm is a local-first desktop app for controlling robots and drones from your computer — with a live camera feed, direct controls, and an optional layer that lets a local or frontier LLM drive the vehicle for you. You stay in charge of how much autonomy to hand off; the app works fully without ever invoking an LLM at all.
+Helm Scout is a local-first desktop app for controlling robots and drones from your computer — with a live camera feed, direct controls, and an optional layer that lets a local or frontier LLM drive the vehicle for you. You stay in charge of how much autonomy to hand off; the app works fully without ever invoking an LLM at all.
 
 Three ways to fly, pick whichever fits the moment:
 
 1. **Drive it yourself** — click the D-pad, push the keyboard, or grab a game controller. The Drive tab shows the camera, an always-visible STOP, the live state of the vehicle, and an activity log.
-2. **Plan a command from English** — Helm's private local LLM (Ollama, isolated) turns "go forward 2 seconds, then turn left" into wire commands. The model runs on your machine; no account, no cloud.
+2. **Plan a command from English** — Helm Scout's private local LLM (Ollama, isolated) turns "go forward 2 seconds, then turn left" into wire commands. The model runs on your machine; no account, no cloud.
 3. **Hand the wheel to an LLM Captain** — the CLI is agent-first by design (structured JSON in, structured JSON out, paired snapshot+telemetry on every grab), so a local Ollama model *or* a frontier coding CLI (Claude, ChatGPT, Gemini, Grok) can drive the robot turn-by-turn from a terminal. The recipe is in [How to actually hand the wheel to a frontier model](#how-to-actually-hand-the-wheel-to-a-frontier-model) below.
 
 The firmware runs on your own microcontroller, the camera stream stays on your LAN, and inference runs on your machine (or under your account at a frontier vendor — your call). Nothing transits the cloud unless you ask it to.
 
 ## Quick start
 
-> **Heads up on platform support.** Linux x64 is what currently works end-to-end and is the only platform tested by the maintainer. macOS and Windows *should* work — Electron, Node, npm, and arduino-cli all ship first-class native builds for both — but Helm's installer scripts haven't been verified there recently. You may hit a rough edge; please [file an issue](https://github.com/hfsc2004/helm/issues) if you do.
+> **Heads up on platform support.** Linux x64 is what currently works end-to-end and is the only platform tested by the maintainer. macOS and Windows *should* work — Electron, Node, npm, and arduino-cli all ship first-class native builds for both — but Helm Scout's installer scripts haven't been verified there recently. You may hit a rough edge; please [file an issue](https://github.com/hfsc2004/helm/issues) if you do.
 
 Pick your platform:
 
@@ -27,7 +27,7 @@ Pick your platform:
 
 ### Linux
 
-**1. Install the prerequisites.** Helm needs `git`, Node.js LTS (22.x or newer), `npm`, and Python 3. On Debian/Ubuntu:
+**1. Install the prerequisites.** Helm Scout needs `git`, Node.js LTS (22.x or newer), `npm`, and Python 3. On Debian/Ubuntu:
 
 ```bash
 sudo apt update
@@ -47,18 +47,18 @@ On Fedora/RHEL: `sudo dnf install git python3 nodejs npm`. On Arch: `sudo pacman
 
 ```bash
 cd ~
-git clone https://github.com/hfsc2004/helm.git
+git clone https://github.com/hfsc2004/helm.git helm-scout
 ```
 
-This creates a new folder called `helm/` inside your home folder (so the project now lives at `~/helm`).
+This creates a new folder called `helm-scout/` inside your home folder (so the project now lives at `~/helm-scout`).
 
 **3. Move into the project folder.** From this point on, *every* command in this README expects you to be inside this folder.
 
 ```bash
-cd helm
+cd helm-scout
 ```
 
-Run `pwd` to confirm — it should print something ending in `/helm`. Run `ls` and you should see folders like `core/`, `cli/`, `src/`, `firmware/`, and a `package.json` file.
+Run `pwd` to confirm — it should print something ending in `/helm-scout`. Run `ls` and you should see folders like `core/`, `cli/`, `src/`, `firmware/`, and a `package.json` file.
 
 **4. Run the one-time installer.** Installs Node deps and native modules. Takes a few minutes.
 
@@ -74,7 +74,7 @@ You only run this once per checkout. If it fails, the error message at the end t
 ./start.sh
 ```
 
-Helm-UI should open within a few seconds. Skip ahead to [Using Helm](#using-helm) below.
+Helm Scout should open within a few seconds. Skip ahead to [Using Helm Scout](#using-helm-scout) below.
 
 ---
 
@@ -95,18 +95,18 @@ Verify with `node --version` — you want `v22.x` or higher. If `brew` installs 
 
 ```bash
 cd ~
-git clone https://github.com/hfsc2004/helm.git
+git clone https://github.com/hfsc2004/helm.git helm-scout
 ```
 
-This creates a new folder called `helm/` inside your home folder (so the project now lives at `~/helm`).
+This creates a new folder called `helm-scout/` inside your home folder (so the project now lives at `~/helm-scout`).
 
 **3. Move into the project folder.** From this point on, *every* command in this README expects you to be inside this folder.
 
 ```bash
-cd helm
+cd helm-scout
 ```
 
-Run `pwd` to confirm — it should end in `/helm`. Run `ls` and you should see folders like `core/`, `cli/`, `src/`, `firmware/`, and a `package.json` file.
+Run `pwd` to confirm — it should end in `/helm-scout`. Run `ls` and you should see folders like `core/`, `cli/`, `src/`, `firmware/`, and a `package.json` file.
 
 **4. Run the one-time installer.**
 
@@ -120,13 +120,13 @@ Run `pwd` to confirm — it should end in `/helm`. Run `ls` and you should see f
 ./start.sh
 ```
 
-If macOS refuses to launch Electron the first time with a "cannot be opened because the developer cannot be verified" message, right-click the app in Finder and choose **Open** — that's a one-time approval. Skip ahead to [Using Helm](#using-helm).
+If macOS refuses to launch Electron the first time with a "cannot be opened because the developer cannot be verified" message, right-click the app in Finder and choose **Open** — that's a one-time approval. Skip ahead to [Using Helm Scout](#using-helm-scout).
 
 ---
 
 ### Windows
 
-> Helm ships a native Windows installer (`install/RUN_ONCE_WINDOWS.bat`). Electron, Node, npm, and arduino-cli all have first-class Windows builds, so the app runs natively — no WSL, no virtual machine. That said, the maintainer hasn't tested this path recently, so please [file an issue](https://github.com/hfsc2004/helm/issues) if you hit something rough.
+> Helm Scout ships a native Windows installer (`install/RUN_ONCE_WINDOWS.bat`). Electron, Node, npm, and arduino-cli all have first-class Windows builds, so the app runs natively — no WSL, no virtual machine. That said, the maintainer hasn't tested this path recently, so please [file an issue](https://github.com/hfsc2004/helm/issues) if you hit something rough.
 
 **1. Install the prerequisites.**
 
@@ -154,18 +154,18 @@ cd %USERPROFILE%
 **3. Clone the repository there.**
 
 ```cmd
-git clone https://github.com/hfsc2004/helm.git
+git clone https://github.com/hfsc2004/helm.git helm-scout
 ```
 
-This creates a new folder called `helm` inside your user folder (so the project now lives at `C:\Users\<your-name>\helm`).
+This creates a new folder called `helm-scout` inside your user folder (so the project now lives at `C:\Users\<your-name>\helm-scout`).
 
 **4. Move into the project folder.** From this point on, *every* command in this README expects you to be inside this folder.
 
 ```cmd
-cd helm
+cd helm-scout
 ```
 
-Run `cd` with no arguments to confirm — it should print something ending in `\helm`. Run `dir` and you should see folders like `core`, `cli`, `src`, `firmware`, and a `package.json` file.
+Run `cd` with no arguments to confirm — it should print something ending in `\helm-scout`. Run `dir` and you should see folders like `core`, `cli`, `src`, `firmware`, and a `package.json` file.
 
 **5. Run the one-time installer.**
 
@@ -181,24 +181,26 @@ Installs Node deps. Takes a few minutes. You only run this once per checkout.
 start.bat
 ```
 
-Or just double-click `start.bat` in Explorer. Helm-UI should open within a few seconds. Skip ahead to [Using Helm](#using-helm) below.
+Or just double-click `start.bat` in Explorer. Helm Scout should open within a few seconds. Skip ahead to [Using Helm Scout](#using-helm-scout) below.
 
 **Notes for Windows users:**
 
-- **USB devices for firmware flashing** work natively — the ESP32 and Pi Pico boards show up under `COM3`, `COM4`, etc. in Device Manager. Helm's Devices tab enumerates them the same way it does `/dev/ttyUSB0` on Linux. You may need the [Silicon Labs CP210x driver](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers) or [CH340 driver](https://www.wch-ic.com/downloads/CH341SER_EXE.html) for some ESP32 dev boards if Windows doesn't auto-install them.
+- **USB devices for firmware flashing** work natively — the ESP32 and Pi Pico boards show up under `COM3`, `COM4`, etc. in Device Manager. Helm Scout's Devices tab enumerates them the same way it does `/dev/ttyUSB0` on Linux. You may need the [Silicon Labs CP210x driver](https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers) or [CH340 driver](https://www.wch-ic.com/downloads/CH341SER_EXE.html) for some ESP32 dev boards if Windows doesn't auto-install them.
 - **mDNS (`<name>.local`)** requires the [Bonjour Print Services for Windows](https://support.apple.com/kb/DL999) runtime. Without it, fall back to the vehicle's static IP (visible in `helm vehicle-list` and the Vehicles tab).
 - **PowerShell vs Command Prompt**: either works. If a command in this README starts with `./` (Linux-style), use `.\` (backslash) on Windows.
 
 ---
 
-### Using Helm
+### Using Helm Scout
 
 Once the desktop app is running:
 
 - Go to the **Devices** tab to flash a board, or the **Vehicles** tab to register one that's already configured.
 - Use the **Drive** tab to control a registered vehicle.
 
-Or use the CLI instead — same code, different surface. From the `helm/` folder:
+Helm Scout uses the `helm` CLI and the `helm-ui` desktop npm script.
+
+Or use the CLI instead — same code, different surface. From the `helm-scout/` folder:
 
 ```bash
 npm run helm -- describe        # full machine-readable command schema
@@ -216,7 +218,7 @@ persist across restarts and initially include existing files in
 `Sensor_Board_v1.3/audio` when that local directory is present. Keep
 added files at their original paths. Playback requires `ffmpeg` on PATH and a
 reachable speaker endpoint (port 83 on updated firmware, port 82 on older builds); WAV, MP3, OGG, FLAC, M4A, and AAC are
-supported. Restart Helm after updating to load the new desktop audio controls.
+supported. Restart Helm Scout after updating to load the new desktop audio controls.
 Keyboard driving retries the board connection after a flash; the Driver panel
 shows bridge status and errors. Click outside library search fields before using
 WASD or NumPad controls.
@@ -231,7 +233,7 @@ light finishes. **No Action** adds a timed pause without issuing light
 commands. Save to the persistent library, then **Play**, **Stop**,
 or **Delete** from the panel. The wrapped play-arrow **Play Loop** button
 repeats the entire show until **Stop** is pressed. Stop cancels waits and turns
-off the lights used by the show. Shows run in Helm, so leave Helm open while playing.
+off the lights used by the show. Shows run in Helm Scout, so leave Helm Scout open while playing.
 Network request time adds to each programmed interval. A show stops on command
 failure, reports the error, and attempts to turn off all lights it touched.
 
@@ -244,12 +246,12 @@ those lines until the module's control GPIOs are identified. No pins are guessed
 
 ## Two surfaces, one core
 
-PSF Helm exposes the same logic two ways:
+Helm Scout exposes the same logic two ways:
 
 - **`helm-ui`** — Electron desktop app. Three tabs: **Drive** (camera, STOP, intent bar, input pad, speed slider, live state, activity log), **Vehicles** (per-vehicle cards with drive-tuning panel and sidecar config), and **Devices** (driver-input picker, USB/serial enumeration, GPU info, Ollama status). Launch with `./start.sh` or `npm run helm-ui`.
 - **`helm`** — CLI. Agent-first by design: structured JSON output by default, NDJSON event streams, distinct exit codes, `helm describe` emits the full command schema for LLM introspection. Every UI control has a matching CLI command. The same `vehicle-snapshot` an LLM Captain uses to see the world is the same one a human runs at the terminal. Run with `npm run helm -- <command>`.
 
-Both surfaces consume `core/` — neither owns business logic. A frontier model with shell access can drive Helm exactly the way a human or the desktop app can.
+Both surfaces consume `core/` — neither owns business logic. A frontier model with shell access can drive Helm Scout exactly the way a human or the desktop app can.
 
 ## End-to-end: drive a truck by talking to it
 
@@ -261,7 +263,7 @@ npm run helm -- vehicle-add truck.local --name truck-01
 ID=$(npm run helm -- vehicle-list | jq -r '.vehicles[0].id')
 npm run helm -- vehicle-camera-set $ID http://172.20.0.16:81
 
-# 2. Install + start Helm's private Ollama (port 52450, isolated from any system Ollama)
+# 2. Install + start Helm Scout's private Ollama (port 52450, isolated from any system Ollama)
 npm run helm -- ollama-install --confirm
 npm run helm -- ollama-start
 
@@ -346,7 +348,7 @@ The Drive tab is what you use day-to-day:
 
 `helm vehicle-snapshot <id>` is the workhorse command for LLM-driven operation. It pulls one JPEG frame from the camera **and** pairs it with the drive board's telemetry — IR distances on all four sensors, collision-guard state, motor PWM, RSSI — in a single response. An LLM Captain looking at a frame almost always wants to know whether the forward path is blocked *right now*, so we made that the default rather than a separate round-trip.
 
-When Helm-UI is running, the standalone CLI snaps via the loopback control plane so **the live UI and the CLI share the same upstream connection to the camera** — the ESP32-S3 camera firmware only accepts one HTTP client at a time, so this is the only way to drive *and* observe simultaneously. The frontier model in a terminal sees the same frame you do.
+When Helm Scout is running, the standalone CLI snaps via the loopback control plane so **the live UI and the CLI share the same upstream connection to the camera** — the ESP32-S3 camera firmware only accepts one HTTP client at a time, so this is the only way to drive *and* observe simultaneously. The frontier model in a terminal sees the same frame you do.
 
 ```bash
 # Write a JPEG to disk + emit structured handle (path, telemetry, guard state).
@@ -383,16 +385,16 @@ That's the whole protocol. A frontier model with shell access can pilot the truc
 
 ### How to actually hand the wheel to a frontier model
 
-The "frontier model with shell access" above is not a metaphor. The official CLIs from Anthropic, OpenAI, Google, and xAI all ship coding agents that can run shell commands in your terminal. PSF Helm is designed so the agent-first CLI surface (`helm`) *is* the protocol — no special bridge, no MCP server, no API key configuration on Helm's side. The model uses the same commands a human would.
+The "frontier model with shell access" above is not a metaphor. The official CLIs from Anthropic, OpenAI, Google, and xAI all ship coding agents that can run shell commands in your terminal. Helm Scout is designed so the agent-first CLI surface (`helm`) *is* the protocol — no special bridge, no MCP server, no API key configuration on Helm Scout's side. The model uses the same commands a human would.
 
 The recipe — works for any of: Claude Code (`claude`), OpenAI Codex CLI (`codex`), Gemini CLI (`gemini`), Grok CLI (`grok`):
 
-1. **Have a working vehicle in Helm.** Open Helm-UI, flash a board via the Devices wizard (or run `helm flash` from the CLI), confirm the vehicle drives from the Drive tab. If you can drive it, the model can drive it. **Do not skip this step** — letting an LLM debug a misconfigured robot is a bad time.
+1. **Have a working vehicle in Helm Scout.** Open Helm Scout, flash a board via the Devices wizard (or run `helm flash` from the CLI), confirm the vehicle drives from the Drive tab. If you can drive it, the model can drive it. **Do not skip this step** — letting an LLM debug a misconfigured robot is a bad time.
 
 2. **In terminal #1**, from the project directory, start your frontier coding CLI:
 
     ```bash
-    cd /path/to/psf-helm
+    cd /path/to/helm-scout
     claude                # or: codex / gemini / grok
     ```
 
@@ -402,14 +404,14 @@ The recipe — works for any of: Claude Code (`claude`), OpenAI Codex CLI (`code
 
     `AGENTS.md` is the LLM-facing operator manual — hard rules, the 3-command Captain loop, full telemetry interpretation, the IR-reading cheat sheet, and a catalog of every CLI command the model needs (`helm cmd`, `helm stop`, `helm vehicle-snapshot`, `helm state`, `helm describe`) in the priority order it should reach for them. It also documents the failure modes previous Captains have run into on this hardware, so the model doesn't have to learn them the hard way. Codex, Cursor, Claude Code, and Grok all auto-load `AGENTS.md` on session start, so the model has likely already read it before you even ask — confirming with a "summarize what you read" prompt is just a sanity check.
 
-3. **In terminal #2**, from the same project directory, start Helm-UI:
+3. **In terminal #2**, from the same project directory, start Helm Scout:
 
     ```bash
-    cd /path/to/psf-helm
+    cd /path/to/helm-scout
     ./start.sh
     ```
 
-    Helm-UI opens the loopback control plane so terminal #1's CLI commands share the camera connection with the live UI. You can watch the camera feed in the UI while the model drives — same frames, same connection.
+    Helm Scout opens the loopback control plane so terminal #1's CLI commands share the camera connection with the live UI. You can watch the camera feed in the UI while the model drives — same frames, same connection.
 
 4. **Back in terminal #1**, give the model a mission:
 
@@ -417,11 +419,11 @@ The recipe — works for any of: Claude Code (`claude`), OpenAI Codex CLI (`code
 
     The model will issue `helm vehicle-snapshot truck-01 --base64`, look at the JPEG it gets back, check the IR/guard data, issue a `helm cmd` with a duration, snapshot again, and narrate what's happening. If something blocks it (collision guard fires, camera offline, vehicle not in registry), the structured error tells the model exactly what's wrong and it'll usually self-correct.
 
-**Why two terminals and not one?** Helm-UI in terminal #2 keeps the long-lived camera stream open and renders it visually for you. The frontier coding CLI in terminal #1 runs short-lived commands that piggy-back on that stream via the loopback control plane. You stay in the loop visually while the model handles the cognition.
+**Why two terminals and not one?** Helm Scout in terminal #2 keeps the long-lived camera stream open and renders it visually for you. The frontier coding CLI in terminal #1 runs short-lived commands that piggy-back on that stream via the loopback control plane. You stay in the loop visually while the model handles the cognition.
 
-**Safety:** the firmware's 800ms deadman timer, the IR collision guard, and the always-on STOP button in Helm-UI all still apply. If the model does something dumb, the truck refuses the command, the deadman cuts the motors, or you hit STOP. The model never touches the firmware — only the high-level intents.
+**Safety:** the firmware's 800ms deadman timer, the IR collision guard, and the always-on STOP button in Helm Scout all still apply. If the model does something dumb, the truck refuses the command, the deadman cuts the motors, or you hit STOP. The model never touches the firmware — only the high-level intents.
 
-**Privacy:** the JPEGs and telemetry stay on your machine until *the model's CLI* sends them to the frontier vendor. That's the same trust boundary you accepted when you installed `claude` / `codex` / `gemini` / `grok` in the first place — Helm doesn't add a new one. If you want zero bytes leaving your machine, use a local Ollama model via `helm drive` instead.
+**Privacy:** the JPEGs and telemetry stay on your machine until *the model's CLI* sends them to the frontier vendor. That's the same trust boundary you accepted when you installed `claude` / `codex` / `gemini` / `grok` in the first place — Helm Scout doesn't add a new one. If you want zero bytes leaving your machine, use a local Ollama model via `helm drive` instead.
 
 The `source` field tells you where the frame came from:
 
@@ -432,10 +434,10 @@ The `source` field tells you where the frame came from:
 
 When the UI has a live camera stream, snapshots use that cached connection;
 they do not make a second request to the camera board. If the stream stalls,
-Helm closes it and reconnects before resuming snapshots. This matters for
+Helm Scout closes it and reconnects before resuming snapshots. This matters for
 ESP32 camera servers that can handle only one camera client at a time.
 
-The whole pipeline is local: the camera lives on your LAN, the cache lives in your Helm-UI process, the bridge between processes is loopback-only (`127.0.0.1`, bearer-token auth, descriptor in `<dataDir>/control-plane.json` mode `0600`). Nothing transits the cloud — including the bytes a frontier model sees when it asks for a snapshot.
+The whole pipeline is local: the camera lives on your LAN, the cache lives in your Helm Scout process, the bridge between processes is loopback-only (`127.0.0.1`, bearer-token auth, descriptor in `<dataDir>/control-plane.json` mode `0600`). Nothing transits the cloud — including the bytes a frontier model sees when it asks for a snapshot.
 
 ## Vehicles tab
 
@@ -452,17 +454,17 @@ Bench surface for inspecting and configuring hardware:
 
 ## Flashing firmware
 
-Helm flashes microcontrollers from the same Devices tab you use to inspect them. Plug a board in over USB, the **USB / Serial** section detects it, click **Configure →**, and the wizard walks you through it.
+Helm Scout flashes microcontrollers from the same Devices tab you use to inspect them. Plug a board in over USB, the **USB / Serial** section detects it, click **Configure →**, and the wizard walks you through it.
 
 ### From the UI
 
-1. **Plug the board in.** Linux usually exposes it as `/dev/ttyUSB0` (CP210x / CH340 bridges) or `/dev/ttyACM0` (native USB-CDC, including ESP32-S3 and Pico 2). Helm tags it with a board-family hint where available; a generic ESP32 hint does **not** distinguish a classic ESP32 from an ESP32-S3.
-2. **Click Configure →.** Select the exact board type, then its firmware template. For the PSF Sensor Board v1.3's ESP32-S3-CAM, choose **ESP32-S3 (camera / sensor board)** and **GSN Robotics - PSF Sensor Board v1.3 (bring-up)**. Helm requires the explicit chip choice when USB identifies only the ESP32 family.
+1. **Plug the board in.** Linux usually exposes it as `/dev/ttyUSB0` (CP210x / CH340 bridges) or `/dev/ttyACM0` (native USB-CDC, including ESP32-S3 and Pico 2). Helm Scout tags it with a board-family hint where available; a generic ESP32 hint does **not** distinguish a classic ESP32 from an ESP32-S3.
+2. **Click Configure →.** Select the exact board type, then its firmware template. For the PSF Sensor Board v1.3's ESP32-S3-CAM, choose **ESP32-S3 (camera / sensor board)** and **GSN Robotics - PSF Sensor Board v1.3 (bring-up)**. Helm Scout requires the explicit chip choice when USB identifies only the ESP32 family.
 3. **Vehicle name.** Becomes the mDNS hostname automatically — naming the truck `Truck` makes it reachable as `truck.local` after flash.
 4. **Wi-Fi.** SSID dropdown shows what the host's radio can see, filtered to the bands the board can actually join. Eye-icon toggle on the password field so you can verify it before flashing it in. Networks on bands the target can't reach (e.g. 5GHz for a classic ESP32) are hidden with a "N networks hidden" note.
-5. **Networking.** Static IP (default) or DHCP. With DHCP, Helm stores the vehicle's `transport.host` as `<name>.local` instead of an IP, so a new DHCP lease doesn't break the connection. Heads-up: mDNS needs Avahi (Linux) or Bonjour (Windows); on a guest Wi-Fi that blocks multicast, switch to Static IP.
+5. **Networking.** Static IP (default) or DHCP. With DHCP, Helm Scout stores the vehicle's `transport.host` as `<name>.local` instead of an IP, so a new DHCP lease doesn't break the connection. Heads-up: mDNS needs Avahi (Linux) or Bonjour (Windows); on a guest Wi-Fi that blocks multicast, switch to Static IP.
 6. **(Optional) Advanced.** Motor invert / trim. Per-board flash params (FQBN override, `--build-property` for USB-CDC and pin profile, erase-before-upload, post-upload serial capture) are exposed here too; the ESP32-S3 video template offers three pin profiles out of the box (`esp32s3_eye` / `ai_thinker_s3` / `elegoo_s3`).
-7. **Click Flash.** First time on a host, arduino-cli auto-installs the ESP32 core (~5–10 min, one time). Compile + upload streams live below. On success, Helm updates the registry — re-flashing the same robot updates the existing record instead of erroring "vehicle already exists".
+7. **Click Flash.** First time on a host, arduino-cli auto-installs the ESP32 core (~5–10 min, one time). Compile + upload streams live below. On success, Helm Scout updates the registry — re-flashing the same robot updates the existing record instead of erroring "vehicle already exists".
 
 If the button is greyed out, a yellow `!` chip next to it names the missing field — no guessing which gate is closed.
 
@@ -476,7 +478,7 @@ not implemented. See the [template notes](firmware/templates/sensor-board-v1-3-e
 for limits and test endpoints; raw ToF ranges are not collision decisions.
 
 The v1.3 bring-up board is a **single-board camera/sensor vehicle**, not a
-sidecar requiring a second drive ESP32. Helm does not show the older drive
+sidecar requiring a second drive ESP32. Helm Scout does not show the older drive
 keypad or poll `/telemetry` for this revision. With the updated sensor-board
 firmware, the Drive tab accepts the selected WASD or NumPad keyboard mode
 through the ELEGOO Uno's bounded motor commands, without adding an on-screen
@@ -528,13 +530,13 @@ Once the board reboots and joins Wi-Fi, the firmware exposes:
 - **"vehicle already exists"** — fixed; re-flashing the same name now reuses the existing registry record. If you see this on an older build, delete the record from the Vehicles tab and re-flash.
 - **"This chip is ESP32-S3, not ESP32"** — the wrong board type/template was selected. Choose ESP32-S3 and the matching v1.3 template; the serial port may be correct even when the compile target is not.
 - **mDNS works once then times out** — known; the responder isn't re-announcing periodically yet. Fall back to the board's IP (from `/health`) until that's fixed.
-- **Read from `/dev/ttyUSB0` stalls** — close Helm-UI (it competes with the bootloader for the serial port via background telemetry polls) and retry.
+- **Read from `/dev/ttyUSB0` stalls** — close Helm Scout (it competes with the bootloader for the serial port via background telemetry polls) and retry.
 - **First flash takes 10+ minutes** — that's the one-time ESP32 core install. Subsequent flashes are ~30s.
 - **Compile error: `'configured' does not name a type`** — fixed in the current template; was a dormant typo that only surfaced on the static-IP fallback path.
 
 ## Bring your own model
 
-Any llama.cpp-compatible `.gguf` works. Drop the URL into `helm model-download` and Helm fetches it, verifies it, and registers it with the private Ollama via blob upload + Modelfile creation. HF token (for gated models) lives in `.env`, mode 0600, sent only to `huggingface.co` as Bearer auth, never echoed.
+Any llama.cpp-compatible `.gguf` works. Drop the URL into `helm model-download` and Helm Scout fetches it, verifies it, and registers it with the private Ollama via blob upload + Modelfile creation. HF token (for gated models) lives in `.env`, mode 0600, sent only to `huggingface.co` as Bearer auth, never echoed.
 
 | Recommended starter | Size | Vision? | Gated? |
 |---|---|---|---|
@@ -561,7 +563,7 @@ Both are vision-capable (the agent will eventually be able to see the camera fee
 - **Two surfaces over one core.** The CLI and the UI are peers. Either can do anything the other can.
 - **Vehicle-neutral.** Ground robots first; drones and other vehicles slot in by adding a `core/vehicles/<kind>.ts` adapter and a `target` value, not by rewriting anything.
 - **Safety by default.** Firmware deadman timer (800 ms on the truck), strict app-side command bounds, always-visible STOP. Validators reject malformed model output rather than guessing at it.
-- **One authority for child processes.** Everything Helm spawns (Ollama, arduino-cli, mpremote, future voice engines, flash subprocesses) registers with BMOC. App-quit reaps every child. No orphans.
+- **One authority for child processes.** Everything Helm Scout spawns (Ollama, arduino-cli, mpremote, future voice engines, flash subprocesses) registers with BMOC. App-quit reaps every child. No orphans.
 - **One authority for IPC subscriptions.** Long-lived streams (state, drive lifecycle) are sessions too. Window-close reaps them.
 - **Bring your own model.** Any `.gguf`. No vendor lock-in.
 - **Cap everything on disk.** No category of stored data grows unbounded.
@@ -572,7 +574,7 @@ Both are vision-capable (the agent will eventually be able to see the camera fee
 - Linux x64 today; macOS and Windows in the next round of polish
 - For the Drive view: a vehicle on your local WiFi (the ESP32 truck firmware is in `firmware/ground-skidsteer/`)
 - For the planner: any HF-hosted `.gguf` model (Qwen2.5-VL-7B recommended)
-- For the Devices flash flow: arduino-cli (Helm installs it on demand) for ESP32 / ESP32-S3; Python 3 + `pip install mpremote` for Pi Pico / Pico 2
+- For the Devices flash flow: arduino-cli (Helm Scout installs it on demand) for ESP32 / ESP32-S3; Python 3 + `pip install mpremote` for Pi Pico / Pico 2
 
 ## Status
 
@@ -583,13 +585,13 @@ Working end-to-end on Linux x64:
 - ✅ **Configure-and-flash from the UI**: click a detected board → pick a template → fill in Wi-Fi / camera params → flash with live arduino-cli output
 - ✅ **PSF Sensor Board revision setting** per vehicle (v1.1 or v1.3) and v1.3 ESP32-S3-CAM bench bring-up template; front/rear ToF ranging, raw 8×8 depth frames, IMU samples, RGBW LEDs, and speaker playback have been hardware-tested. Microphone audio and collision-control integration remain follow-up work
 - ✅ **Live v1.3 sensor readouts in Drive** — LR Front/Rear VL53L1CB full-field and four-quadrant scans, an adaptive SR Front VL53L5CX 4×4/8×8 heat map with an approximate LR Front overlay, chip-frame acceleration/gyro, Wi-Fi RSSI, and IMU die temperature. Each narrow region retains its last confirmed distance with an age/stale indication. The overlay is uncalibrated and does not imply pixel alignment. `vehicle-tof-mode` controls the LR full-field Short/Medium/Long mode; quadrants scan in Short mode. Automatic fallback tries another full-field mode after persistent invalid returns.
-- ✅ **SR Front profiles** — Extended Reach (4×4/30–60 Hz), Far Detail (8×8/5–10 Hz with diagnostics), Balanced Detail (8×8/10 Hz), Close Detail (8×8/10–15 Hz), and Low Power (4×4/1–2 Hz, autonomous, 5 ms integration). Firmware boots into Low Power at 2 Hz. The UI dropdown and `vehicle-wide-tof` CLI switch profiles without reflashing; the heat map uses the active resolution and expires stale colors. Observed test ranges are documented, not guaranteed limits. See [CLI profile controls](cli/README.md#sr-front-vl53l5cx-profiles). Restart Helm after an app update that changes preload/IPC controls.
-- 🧪 **ELEGOO Uno V4 UART bring-up for v1.3** — GPIO43-to-Uno commands have been verified by shield RGB-off and reverse motor motion. Helm offers keyboard-only, bounded Uno driving and sends RGB-off automatically after ESP startup. The Uno-to-GPIO44 return path remains silent, so ultrasonic and line queries do not yet provide readings. The startup RGB-off sequence does not alter the Uno's own power-on firmware.
-- ✅ **Boot-relative v1.3 orientation** — roll, pitch, and yaw are zeroed after stationary startup calibration and tracked on the board between Helm polls. Agents can re-zero a stationary pose with `vehicle-imu-zero`; yaw can drift without a compass.
+- ✅ **SR Front profiles** — Extended Reach (4×4/30–60 Hz), Far Detail (8×8/5–10 Hz with diagnostics), Balanced Detail (8×8/10 Hz), Close Detail (8×8/10–15 Hz), and Low Power (4×4/1–2 Hz, autonomous, 5 ms integration). Firmware boots into Low Power at 2 Hz. The UI dropdown and `vehicle-wide-tof` CLI switch profiles without reflashing; the heat map uses the active resolution and expires stale colors. Observed test ranges are documented, not guaranteed limits. See [CLI profile controls](cli/README.md#sr-front-vl53l5cx-profiles). Restart Helm Scout after an app update that changes preload/IPC controls.
+- 🧪 **ELEGOO Uno V4 UART bring-up for v1.3** — GPIO43-to-Uno commands have been verified by shield RGB-off and reverse motor motion. Helm Scout offers keyboard-only, bounded Uno driving and sends RGB-off automatically after ESP startup. The Uno-to-GPIO44 return path remains silent, so ultrasonic and line queries do not yet provide readings. The startup RGB-off sequence does not alter the Uno's own power-on firmware.
+- ✅ **Boot-relative v1.3 orientation** — roll, pitch, and yaw are zeroed after stationary startup calibration and tracked on the board between Helm Scout polls. Agents can re-zero a stationary pose with `vehicle-imu-zero`; yaw can drift without a compass.
 - ✅ **mDNS discovery** — drive boards advertise as `<name>.local` so DHCP IP changes don't break the connection; the host-side HTTP layer translates `ENOTFOUND` on `.local` names into "install Avahi (Linux) or Bonjour (Windows)" instead of a raw DNS error
 - ✅ **Host-side Wi-Fi scan** in the flash wizard — SSID dropdown lists networks the host sees (Linux/`nmcli` today, macOS/Windows fall back to text input), filtered to the bands the target board's radio can actually join (no 5GHz networks offered for an ESP32)
 - ✅ **Flash wizard polish** — yellow `!` chip names the missing field instead of silently disabling the Flash button; password reveal eye-icon so the user can verify a Wi-Fi typo *before* it gets baked into firmware; re-flashing the same robot updates the existing registry entry instead of erroring with "vehicle already exists"
-- ✅ **Auto-heal partial ESP32 core installs** — when arduino-cli's compile errors look like a corrupted platform install, Helm reinstalls the core and retries automatically; first-run failures get a one-line user-actionable cause (network / disk / permissions) instead of raw `ECONNREFUSED`
+- ✅ **Auto-heal partial ESP32 core installs** — when arduino-cli's compile errors look like a corrupted platform install, Helm Scout reinstalls the core and retries automatically; first-run failures get a one-line user-actionable cause (network / disk / permissions) instead of raw `ECONNREFUSED`
 - ✅ **Drive-tuning panel** per vehicle: action map (rotate intents 90/180° without re-flashing), swap-sides, invert-left/right
 - ✅ **Three input devices** for driving: Keyboard WASD (with QEZC diagonals), Keyboard NumPad (8/4/2/6 + 7/9/1/3), or Game Controller (left-stick tank mix); pick from the Devices tab
 - ✅ **Drive-speed slider** on the Drive view with +/- step buttons and keyboard shortcuts; live during a held drive
@@ -602,7 +604,7 @@ Working end-to-end on Linux x64:
 - ✅ Compile + upload sketch templates with strict variable validation (ground-skidsteer ESP32 + ESP32-S3 video camera)
 - ✅ MJPEG camera sidecar — vehicle's S3 streams `/stream` / `/capture` / `/health` directly to the Drive view; nothing transits the cloud
 - ✅ Shared camera-stream cache — one upstream connection per vehicle; the live UI and `helm vehicle-snapshot` see the same frames. Works around single-threaded ESP32 camera firmwares (which can only serve one HTTP client at a time)
-- ✅ Loopback control plane on 127.0.0.1 — running Helm-UI exposes a token-authed local-only HTTP surface so the standalone `helm` CLI (and, eventually, an LLM agent) can siphon frames out of the live cache without fighting the camera for a connection
+- ✅ Loopback control plane on 127.0.0.1 — running Helm Scout exposes a token-authed local-only HTTP surface so the standalone `helm` CLI (and, eventually, an LLM agent) can siphon frames out of the live cache without fighting the camera for a connection
 - ✅ Roving microphone sidecar — vehicle audio over chunked HTTP, played host-side
 - 🚧 In progress: Pico/mpremote flash backend, voice install/runtime, native gamepad button remap, packaging, macOS/Windows ports
 
@@ -612,24 +614,24 @@ Cross-platform target is Linux, macOS, and Windows. Linux x64 is what currently 
 
 Licensed under the Apache License, Version 2.0. See [`LICENSE`](LICENSE).
 
-## What PSF Helm does NOT do
+## What Helm Scout does NOT do
 
-Nothing in PSF Helm phones home. No analytics, no error reporting, no user tracking, no cloud accounts. Vehicle state ("telemetry" in robotics terminology) refers to data the *vehicle* reports about itself — battery voltage, motor speed, signal strength, IR distances, camera frames — and Helm itself never transmits any of it off your machine. (If you choose to run a frontier coding CLI in the recipe above, that CLI is the thing that sends bytes upstream — to a vendor *you* picked. Helm is not in that path.) 🐤
+Nothing in Helm Scout phones home. No analytics, no error reporting, no user tracking, no cloud accounts. Vehicle state ("telemetry" in robotics terminology) refers to data the *vehicle* reports about itself — battery voltage, motor speed, signal strength, IR distances, camera frames — and Helm Scout itself never transmits any of it off your machine. (If you choose to run a frontier coding CLI in the recipe above, that CLI is the thing that sends bytes upstream — to a vendor *you* picked. Helm Scout is not in that path.) 🐤
 
 Voice (when implemented) will run locally via whisper.cpp + piper. Audio is never transmitted; transcription happens on your machine and the audio is discarded after the command runs. 🐤
 
-Helm makes outbound network connections only to opt-in destinations, only when you trigger them. The current list (also available as JSON via `helm privacy`):
+Helm Scout makes outbound network connections only to opt-in destinations, only when you trigger them. The current list (also available as JSON via `helm privacy`):
 
 | Host | Purpose | Triggered by |
 |---|---|---|
-| `ollama.com` | Helm's private Ollama binary install | `helm ollama-install --confirm` |
+| `ollama.com` | Helm Scout's private Ollama binary install | `helm ollama-install --confirm` |
 | `github.com` | Voice engine binaries (when voice ships) | `helm voice-install --confirm` |
 | `huggingface.co` | Model `.gguf` downloads (HF token sent only here, only as Bearer auth) | `helm model-download <url>` |
 | `downloads.arduino.cc` | arduino-cli toolchain install | `helm toolchain-install --target arduino-cli --confirm` |
 
 If a future version ever adds any other outbound network traffic, it will be opt-in and documented prominently. 🐤
 
-Helm does also bind one **loopback-only** listener: when Helm-UI is running, it exposes a tiny HTTP control plane on `127.0.0.1` (ephemeral port, bearer-token authenticated, descriptor written to `<dataDir>/control-plane.json` mode `0600`). This is how the standalone `helm` CLI shares the camera cache with the live UI. Nothing on the LAN can reach it; nothing leaves your machine.
+Helm Scout does also bind one **loopback-only** listener: when Helm Scout is running, it exposes a tiny HTTP control plane on `127.0.0.1` (ephemeral port, bearer-token authenticated, descriptor written to `<dataDir>/control-plane.json` mode `0600`). This is how the standalone `helm` CLI shares the camera cache with the live UI. Nothing on the LAN can reach it; nothing leaves your machine.
 
 ---
 

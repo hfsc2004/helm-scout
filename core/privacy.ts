@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
 /**
- * PSF Helm privacy posture, machine-readable.
+ * Helm Scout privacy posture, machine-readable.
  *
  * If this module ever has to change to allow an outbound destination, the
  * canary in README.md changes at the same time. This module is the source
@@ -43,7 +43,7 @@ export interface PrivacyPosture {
     persisted_to_disk: false;
     note: string;
   };
-  /** Loopback servers Helm binds locally so its own surfaces can talk to each other. */
+  /** Loopback servers Helm Scout binds locally so its own surfaces can talk to each other. */
   local_listeners: Array<{
     host: string;
     purpose: string;
@@ -59,7 +59,7 @@ export function buildPrivacyPosture(opts: {
   return {
     canary: {
       statement:
-        "PSF Helm makes zero outbound network connections except to vehicles on the local network. Four opt-in exceptions: github.com (one-time, only if the user installs voice), ollama.com (one-time, only if the user installs Helm's private Ollama), huggingface.co (per-model, only when the user explicitly downloads a model), and downloads.arduino.cc (one-time, only when the user installs the arduino-cli toolchain). The HF token, if configured, is sent only to huggingface.co and only as Bearer auth.",
+        "Helm Scout makes zero outbound network connections except to vehicles on the local network. Four opt-in exceptions: github.com (one-time, only if the user installs voice), ollama.com (one-time, only if the user installs Helm Scout's private Ollama), huggingface.co (per-model, only when the user explicitly downloads a model), and downloads.arduino.cc (one-time, only when the user installs the arduino-cli toolchain). The HF token, if configured, is sent only to huggingface.co and only as Bearer auth.",
       last_affirmed: "2026-05-15",
       version_affirmed: opts.version,
     },
@@ -72,7 +72,7 @@ export function buildPrivacyPosture(opts: {
       },
       {
         host: "ollama.com",
-        purpose: "Helm's private Ollama binary install",
+        purpose: "Helm Scout's private Ollama binary install",
         opt_in: true,
         triggered_by: "helm ollama-install (or the UI equivalent)",
       },
@@ -107,22 +107,22 @@ export function buildPrivacyPosture(opts: {
       note: "Speech is transcribed on your machine and discarded after the command is executed.",
     },
     llm: {
-      backend: "Helm's private Ollama (loopback only)",
+      backend: "Helm Scout's private Ollama (loopback only)",
       inference_location: "local",
       prompts_transmitted: false,
-      note: "Natural-language intents (helm drive ...) are sent only to Helm's private Ollama on 127.0.0.1. Prompts never leave your machine.",
+      note: "Natural-language intents (helm drive ...) are sent only to Helm Scout's private Ollama on 127.0.0.1. Prompts never leave your machine.",
     },
     audio: {
       location: "local-lan",
       transmitted_off_lan: false,
       persisted_to_disk: false,
-      note: "When a vehicle has a roving microphone configured, Helm pulls the audio stream over your LAN and plays it locally in the UI. The audio is not transcribed, recorded, or transmitted off your network. Stop listening at any time by clicking pause.",
+      note: "When a vehicle has a roving microphone configured, Helm Scout pulls the audio stream over your LAN and plays it locally in the UI. The audio is not transcribed, recorded, or transmitted off your network. Stop listening at any time by clicking pause.",
     },
     local_listeners: [
       {
         host: "127.0.0.1",
         purpose:
-          "Helm-UI control plane. Lets the standalone `helm` CLI talk to a running Helm-UI so cross-process consumers (CLI snapshot, future planner) share one upstream connection to the camera firmware. Bound to loopback only — never the LAN.",
+          "Helm Scout control plane. Lets the standalone `helm` CLI talk to a running Helm Scout so cross-process consumers (CLI snapshot, future planner) share one upstream connection to the camera firmware. Bound to loopback only — never the LAN.",
         bound_to: "127.0.0.1",
         auth: "Bearer token written to <dataDir>/control-plane.json (mode 0600).",
       },

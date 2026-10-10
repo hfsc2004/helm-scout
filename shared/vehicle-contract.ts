@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
 /**
- * Vehicle contract — the shape of "a thing PSF Helm can control."
+ * Vehicle contract — the shape of "a thing Helm Scout can control."
  *
  * Design notes:
  * - The data model is fleet-shaped from day one. The simple driver view
@@ -21,7 +21,7 @@
  *   its own creds in `wifi.video`, its own flash params in `flash.video`.
  * - PSF Sensor Board v1.3 currently runs alone as a camera/sensor board.
  *   Its bring-up firmware has no motor or drive telemetry endpoint.
- * - The runtime endpoints (`transport`, `camera`) are what Helm
+ * - The runtime endpoints (`transport`, `camera`) are what Helm Scout
  *   talks to at drive time; `wifi.*` and `flash.*` are install-time config
  *   the user supplied so we can re-flash or document the vehicle later.
  */
@@ -158,7 +158,7 @@ export interface Vehicle {
   };
   /**
    * Optional audio sidecar (roving microphone — vehicle streams its own
-   * I2S mic to Helm over chunked HTTP). Audio stays on the LAN; nothing
+   * I2S mic to Helm Scout over chunked HTTP). Audio stays on the LAN; nothing
    * is uploaded anywhere.
    */
   audio?: {

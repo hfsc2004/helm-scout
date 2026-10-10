@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
 /**
- * BMOC — sole authority over process lifecycle in PSF Helm.
+ * BMOC — sole authority over process lifecycle in Helm Scout.
  *
  * Imported verbatim from PSF Core's session-manager subsystem. The .js files
  * here are battle-tested across years of fighting process/port/orphan cleanup
  * bugs. Do not "modernize" them.
  *
  * Architectural rule (non-negotiable):
- *   Nothing in Helm spawns or kills its own processes. Every subsystem that
+ *   Nothing in Helm Scout spawns or kills its own processes. Every subsystem that
  *   needs to run a child process — llama.cpp, whisper.cpp, piper, vehicle
  *   transports later — registers it here. BMOC owns the kill switch.
  *
@@ -77,7 +77,7 @@ const state = createStateManager({ processUtils, sessionUtils });
 /**
  * Initialize BMOC. Call once at app startup.
  *
- * @param appPath  Path to the Helm install dir. sessions.json is written
+ * @param appPath  Path to the Helm Scout install dir. sessions.json is written
  *                 alongside it ("../sessions.json" relative to appPath, per
  *                 PSF Core convention).
  */

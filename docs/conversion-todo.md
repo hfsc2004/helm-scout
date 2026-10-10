@@ -4,12 +4,12 @@
 
 ## Context
 
-PSF Helm is a strict-TypeScript project. Two subsystems were imported **verbatim** from PSF Core as plain JavaScript because the code is battle-tested and rewriting it would re-introduce edge-case bugs that took years to find:
+Helm Scout is a strict-TypeScript project. Two subsystems were imported **verbatim** from PSF Core as plain JavaScript because the code is battle-tested and rewriting it would re-introduce edge-case bugs that took years to find:
 
 - `core/hardware/` — GPU detection, classification, headless-first NVIDIA selection
 - `core/bmoc/` — process lifecycle authority (spawn, kill, port release, sessions.json)
 
-Both subsystems sit behind a thin TypeScript wrapper (`index.ts`) that the rest of Helm imports from. The `.js` files themselves are not imported anywhere else — the architectural boundary is one typed door per subsystem.
+Both subsystems sit behind a thin TypeScript wrapper (`index.ts`) that the rest of Helm Scout imports from. The `.js` files themselves are not imported anywhere else — the architectural boundary is one typed door per subsystem.
 
 `allowJs: true` is enabled in `tsconfig.json`, `electron/tsconfig.json`, and `cli/tsconfig.json` so the compiler can typecheck across the boundary.
 
@@ -66,7 +66,7 @@ Recommended order — utilities first, state last:
 ## Rules
 
 - **Do not "modernize" behavior during conversion.** Types only. If you find a real bug, fix it in a separate commit with a clear message. Don't smuggle behavior changes into a "type cleanup" PR.
-- **Do not delete the .js's `console.log` calls.** The wrapper in `core/hardware/index.ts` redirects them to stderr so they stay diagnostic without polluting NDJSON. The conversion can switch them to a real logger eventually, but only after the rest of Helm has a logger to switch *to*.
+- **Do not delete the .js's `console.log` calls.** The wrapper in `core/hardware/index.ts` redirects them to stderr so they stay diagnostic without polluting NDJSON. The conversion can switch them to a real logger eventually, but only after the rest of Helm Scout has a logger to switch *to*.
 - **Run `npm run helm -- hardware` after every hardware conversion.** That's the integration test. The output must remain identical and the `nvidiaSelection.index` must still pick headless cards over display-active ones on multi-GPU systems.
 - **Run a registered/closed session round-trip after every BMOC conversion** once that surface gets a CLI command. (Doesn't exist yet — file a follow-up.)
 

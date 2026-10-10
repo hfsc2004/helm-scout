@@ -5,7 +5,7 @@
  *
  * A tiny HTTP server bound to 127.0.0.1 only — never the LAN. Lets the
  * standalone `helm` CLI (a separate Node process) talk to a running
- * Helm-UI's main process, so cross-process consumers can share the same
+ * Helm Scout's main process, so cross-process consumers can share the same
  * camera-stream cache, BMOC sessions, and registry view.
  *
  * Auth is a bearer token written into the OS-appropriate data dir (mode
@@ -32,7 +32,7 @@ interface ControlPlaneDescriptor {
   host: string;
   port: number;
   token: string;
-  /** PID of the Helm-UI main process that owns this control plane. */
+  /** PID of the Helm Scout main process that owns this control plane. */
   pid: number;
   startedAt: number;
   version: 1;

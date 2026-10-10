@@ -1,7 +1,7 @@
 # PSF Sensor Board v1.3 — first firmware
 
 This is the first **bench bring-up** image for the ESP32-S3-CAM mounted on the
-GSN Robotics / PSF Sensor Board v1.3. It keeps the existing Helm camera API and
+GSN Robotics / PSF Sensor Board v1.3. It keeps the existing Helm Scout camera API and
 adds diagnostics that remain reachable while MJPEG is streaming. Bounded
 motor commands use the separate ELEGOO Uno UART bridge; this image has no
 drive-board IR collision guard or native skid-steer `/cmd` endpoint. No
@@ -79,7 +79,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   `GET /tof-mode` reports the active modes; `POST /tof-mode?mode=auto|short|medium|long&sensor=front|rear|both`
   changes them without reflashing. A pinned mode lasts until changed or rebooted.
   `/ranges` also reports Wi-Fi RSSI in dBm so the Drive readout does not need
-  to poll the camera server while MJPEG is streaming. Helm's Drive view shows
+  to poll the camera server while MJPEG is streaming. Helm Scout's Drive view shows
   all five regions for front and rear, plus an approximate front-quadrant
   overlay on the separate VL53L5CX 8×8 map. The CB quadrants and wide pixels
   are not calibrated to one another, and chip ROI left/right orientation has
@@ -104,7 +104,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   sensor configuration, not a guarantee of host-visible throughput.
   The sensor remains at `0x29`. Live frames
   were received on the bench; raw values are not collision decisions.
-  Helm's heat map uses the active 4×4 or 8×8 grid. Its separate polling waits
+  Helm Scout's heat map uses the active 4×4 or 8×8 grid. Its separate polling waits
   100 ms between completed requests in Fast/Navigation, 200 ms in
   Detail/Inspect, and 500 ms in Idle. LR/IMU polling retains its 1.5-second
   interval. Missing responses retain the last SR frame until its age exceeds
@@ -127,7 +127,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   mounting correction is applied. Firmware now samples continuously near
   50 Hz, discards implausible I²C samples, and averages 80 stationary samples
   after startup to measure gyro bias and set the boot pose to roll/pitch/yaw
-  zero. A quaternion integrates gyro motion between Helm polls and uses gravity
+  zero. A quaternion integrates gyro motion between Helm Scout polls and uses gravity
   for roll/pitch correction. `orientationDeg` reports the estimated pose
   relative to that boot reference; yaw remains relative and slowly drifts
   without a compass. `POST /imu/zero` resets the reference to a fresh,
@@ -156,7 +156,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   normal PDM clock. Microphone capture is unavailable while held.
   `GET /mic-clock-edges` counts GPIO21 rising edges over 5 ms while held,
   distinguishing a static level from a clock the DC meter would average.
-  Helm exposes these as `helm vehicle-mic-clock <id> low|high|edges|restore`;
+  Helm Scout exposes these as `helm vehicle-mic-clock <id> low|high|edges|restore`;
   use the vehicle's registered camera
   host automatically, or pass `--base-url http://<board-ip>:82`.
   `GET /mic-live-pull-test` leaves the PDM clock running, briefly applies
@@ -196,7 +196,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   44.1 kHz stereo to 16 kHz mono PCM; playback duplicates the samples into
   both I²S slots at 22.5% gain with short fades. Regenerate the header with
   `node firmware/templates/sensor-board-v1-3-esp32s3/generate-startup-chime.mjs`.
-  Helm stages the header with the sketch on every flash. The boot chime now
+  Helm Scout stages the header with the sketch on every flash. The boot chime now
   plays before allocating the 32 KiB streaming queue, preserving heap during
   its first I²S writes. If the expander or speaker I²S is unavailable,
   the chime is skipped. The signed PCM fix and final LED/chime sequence were
@@ -214,7 +214,7 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   half of it, and drains the queue to I²S from a dedicated task. The upload
   pauses when the queue is full, so it does not load the whole file into ESP32
   RAM. A separate four-byte buffer aligns stereo frames at chunk boundaries.
-  Helm's `vehicle-speaker-play` command
+  Helm Scout's `vehicle-speaker-play` command
   decodes the source file with local `ffmpeg` and streams that PCM to the
   board. The 10 KiB, 100 KiB, and 500 KiB MP3 samples are all suitable; the
   board has no file-size-specific upload cap. From the repository root:
@@ -224,12 +224,12 @@ separate drive ESP32 is assumed for this v1.3 bring-up configuration.
   npm run helm -- vehicle-speaker-play <vehicle-id> sample-10kb.mp3
   ```
 
-  The Helm command derives the sensor-board host from the configured camera
+  The Helm Scout command derives the sensor-board host from the configured camera
   URL and uses port 82; `--base-url http://<board-ip>:82` overrides that.
   `speakerReady` confirms only I²S initialization, not audible output. The
   tone and PCM endpoints are bench-only and accessible to other devices on
   the board's LAN; there is no speech synthesis or authenticated playback
-  service. The Helm command requires `ffmpeg` on the computer.
+  service. The Helm Scout command requires `ffmpeg` on the computer.
 - RGBW test on port 82: `GET /led?index=0&r=0&g=0&b=0&w=0`. Index is 0–2;
   channels are 0–255. All LEDs start off. The SK6812 wire order is GRBW.
   On the tested board, index 0 is upper right, index 1 is upper left, and
@@ -258,7 +258,7 @@ User-reported robot tests on 2026-10-02 produced these observed ranges:
 | Low Power (`idle`) | 4×4 | 2 Hz | 3 ft (0.91 m) |
 | Far Detail (`inspect`) | 8×8 | 5 Hz | 5 ft (1.52 m) |
 
-Helm uses these display names and shows the observed distances beside them.
+Helm Scout uses these display names and shows the observed distances beside them.
 Firmware profile identifiers and CLI commands retain the names in parentheses.
 
 These are observations for this robot and test, not rated sensor limits or
@@ -334,7 +334,7 @@ rising edges on GPIO21 in 5 ms, then restored PDM capture. This makes a fault
 unique to the original ESP32-S3-CAM module unlikely; it does not yet locate
 the fault on the sensor board or prove the clock reaches either microphone.
 With the replacement module installed, the west socket GPIO21 contact read
-about 1.64 V DC under the normal clock, but 2.2 V when Helm held GPIO21
+about 1.64 V DC under the normal clock, but 2.2 V when Helm Scout held GPIO21
 low. At that same time the ESP32 reported digital pad level 0 and PCNT
 counted zero rising edges in 5 ms. The clock was restored afterward.
 Because the west socket voltage disagrees with a commanded static low on
@@ -386,7 +386,7 @@ can still delay polling even though camera streaming is on the other core.
 
 The camera server has one streaming connection at a time, as in the existing
 video template. It runs in a separate task from the port-82 diagnostics server,
-so sensor and LED testing remain available during the stream. Helm-UI's camera
+so sensor and LED testing remain available during the stream. Helm Scout's camera
 cache should be used for simultaneous UI and CLI viewing.
 
 ### Microphone retest, 2026-10-02
@@ -404,7 +404,7 @@ establish that the clock reaches the microphone packages.
 
 ## Build and bench use
 
-The template appears in Helm's ESP32-S3 Configure Board list as
+The template appears in Helm Scout's ESP32-S3 Configure Board list as
 **GSN Robotics - PSF Sensor Board v1.3 (bring-up)**. The camera pin map matches
 the tested GOOUUU and Freenove ESP32-S3-CAM modules; do not select an unrelated
 pin profile. The Sensor Board's own USB-C socket is power-only. Use the
@@ -417,7 +417,7 @@ used for both tested modules, including the Freenove N16R8 replacement. The
 support OTA updates. Set `camera.hmirror=true` for the tested Freenove camera.
 The VL53L1CB driver is bundled under `src/` from STM32duino VL53L1 2.1.0,
 with a bounded, error-reporting ESP32 I²C adapter and its license in
-`VL53L1-LICENSE.md`. Helm installs Adafruit VL53L5CX 1.0.1 during a normal
+`VL53L1-LICENSE.md`. Helm Scout installs Adafruit VL53L5CX 1.0.1 during a normal
 flash if needed. The template can be rendered without upload:
 
 ```bash
@@ -513,7 +513,7 @@ tones, chimes, and startup sequences without modifying the active upload.
 
 `GET :83/health` identifies `psf-speaker`; `POST :83/speaker-pcm` accepts the
 same PCM upload format as before. The port-82 endpoint remains compatible with
-older clients but still blocks other diagnostics while uploading. Helm and the
+older clients but still blocks other diagnostics while uploading. Helm Scout and the
 CLI probe port 83 automatically and fall back to 82 for older firmware.
 Compilation and desktop transport checks do not establish on-robot timing:
-flash this build, restart Helm, then verify a light show during a long sound.
+flash this build, restart Helm Scout, then verify a light show during a long sound.

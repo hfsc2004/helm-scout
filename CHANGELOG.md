@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to PSF Helm will be documented in this file.
+All notable changes to Helm Scout will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -32,7 +32,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Separate speaker streaming onto a dedicated core-0 HTTP task on port 83 so
   light commands and sensor polling on core 1 can continue during audio uploads.
   Serialize speaker ownership and I2C preparation; retain legacy port-82 playback.
-  Helm and the CLI discover the new endpoint automatically.
+  Helm Scout and the CLI discover the new endpoint automatically.
 
 ### Validation
 - Desktop type checks and production builds passed. Mocked checks cover library
@@ -55,7 +55,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   isolated through script target selection alone; module wiring needs verification.
 - IR control requires the updated firmware and SW1 in expander positions 1–2.
   ESP32-LED4/LED5 playback is unavailable until their GPIO mappings are established.
-- Restart Helm after updating its main/preload processes.
+- Restart Helm Scout after updating its main/preload processes.
 
 ## [0.3.9] - 2026-10-02
 
@@ -96,7 +96,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   on both channels; hardware counting sees clock edges but no DATA edges.
 - Intermittent sensor-board I²C startup failure may require a full power cycle.
   LR sensor recovery and stale confirmed measurements remain follow-up work.
-- Restart Helm after updating the preload/main process to load new IPC controls.
+- Restart Helm Scout after updating the preload/main process to load new IPC controls.
 
 ## [0.3.8] - 2026-10-01
 
@@ -150,7 +150,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Fixed
 - Preserve negative PCM samples when scaling the embedded Sensor Board v1.3
   startup chime; unsigned fade arithmetic had made boot playback sound heavily
-  distorted even though Helm-streamed playback was clean. A compile-time
+  distorted even though Helm Scout-streamed playback was clean. A compile-time
   assertion guards the signed calculation.
 
 ### Changed
@@ -171,7 +171,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Added
 - Bundle `PSF_Chime.wav` as the Sensor Board v1.3 boot sound at 50% playback
   level, with a reproducible generator for its flash-resident PCM header.
-- Stage auxiliary firmware headers during Helm flash and add a microphone-clock
+- Stage auxiliary firmware headers during Helm Scout flash and add a microphone-clock
   diagnostic command for the ongoing GPIO14/GPIO21 bring-up.
 
 ### Changed
@@ -210,7 +210,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
   the front/rear VL53L1CB sensors distinct I²C addresses and stream raw 8×8
   VL53L5CX depth frames with per-zone target status on `/wide-range`.
 - Install each firmware template's pinned Arduino sensor libraries before
-  compiling in Helm's flash flow.
+  compiling in Helm Scout's flash flow.
 
 ### Verified on hardware
 - Front and rear single-zone ranges, 8×8 depth frames, RGBW LEDs, and camera
@@ -223,7 +223,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Serve CLI snapshots from the shared camera cache without also opening a
   redundant `/capture` request to the board.
 - Reconnect a stalled UI camera stream without overlapping it with direct
-  capture requests. On the PSF Sensor Board v1.3 hardware, Helm again held
+  capture requests. On the PSF Sensor Board v1.3 hardware, Helm Scout again held
   one camera connection and ping showed no packet loss during the live test.
 
 ## [0.3.1] - 2026-09-25
@@ -298,7 +298,7 @@ once cross-platform polish, packaging, and documentation lands.
 #### LLM backend (private Ollama)
 - Hard isolation from any system Ollama: private port (52450), private models dir,
   private binary, four-variable env contract, `lsof`+cmdline-based stale-process
-  cleanup that only ever touches Helm-spawned processes
+  cleanup that only ever touches Helm Scout-spawned processes
 - One-time download from `ollama.com` to `<dataDir>/ollama/`
 - BMOC-registered process; window-close + app-quit reap it cleanly
 - CLI: `ollama-status`, `ollama-install --confirm`, `ollama-start`, `ollama-stop`,
@@ -323,7 +323,7 @@ once cross-platform polish, packaging, and documentation lands.
 
 #### Toolchains for microcontroller flashing
 - arduino-cli: download from `downloads.arduino.cc`, isolated env
-  (Helm never touches `~/.arduino15`), managed-then-system fallback
+  (Helm Scout never touches `~/.arduino15`), managed-then-system fallback
 - mpremote: detect-only (system `mpremote`, then `python3 -m mpremote`)
 - CLI: `toolchain-status`, `toolchain-install --target <arduino-cli|mpremote>`,
   `toolchain-uninstall`
@@ -369,8 +369,8 @@ once cross-platform polish, packaging, and documentation lands.
 #### Process + IPC lifecycle (BMOC)
 - Verbatim port from PSF Core's session-manager (~560 lines): generic
   process lifecycle authority. Service-specific Ollama/WebUI/AnythingLLM
-  modules deliberately not copied (Helm's customers register through BMOC themselves)
-- Architectural rule: nothing in Helm spawns or kills its own processes;
+  modules deliberately not copied (Helm Scout's customers register through BMOC themselves)
+- Architectural rule: nothing in Helm Scout spawns or kills its own processes;
   every subsystem registers through BMOC
 - Companion rule: long-lived IPC subscriptions (state, drive lifecycle,
   audio) are sessions too — window-close + app-quit reap them
