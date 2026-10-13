@@ -35,10 +35,6 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Known issues
 - The reported roughly ten-second vehicle-name typing delay has not been
   reproduced or confirmed resolved after the focus and GPU-query changes.
-- One GOOUUU ESP32-S3-CAM reports `cameraReady:false` and HTTP 503 on `/stream`
-  while its sensor services respond. Its camera works on another ESP32;
-  the module, connector, and sensor-board power/connection cause is unresolved.
-  No firmware or hardware pin mappings were changed for this investigation.
 - Restart Helm Scout to load updated main-process code.
 
 ## [0.3.10] - 2026-10-02
