@@ -47,3 +47,7 @@ await bmoc.closeSession(sessionId); // kills process, releases port, persists
 // On app shutdown:
 await bmoc.closeAllSessions();
 ```
+
+Session messages identify the tracked activity (camera stream, IPC, firmware
+compile/upload, or Ollama). Tracking a camera or IPC session does not imply
+Ollama was started. Absent process IDs and ports are omitted from log messages.

@@ -49,7 +49,7 @@ import { scan as scanWifi } from "../../core/wifi/scan.js";
 import {
   detectHardware,
   classifyForInference,
-  selectNvidiaGpu,
+  selectNvidiaGpuAsync,
 } from "../../core/hardware/index.js";
 import {
   flash,
@@ -622,7 +622,7 @@ export function registerIpcHandlers(opts: { version: string }): void {
     const classification = classifyForInference(hw);
     const nvidiaSelection =
       classification.accelerationType === "nvidia"
-        ? selectNvidiaGpu(classification)
+        ? await selectNvidiaGpuAsync(classification)
         : null;
     return { hardware: hw, classification, nvidiaSelection };
   });

@@ -199,6 +199,7 @@ Once the desktop app is running:
 - Use the **Drive** tab to control a registered vehicle.
 
 Helm Scout uses the `helm` CLI and the `helm-ui` desktop npm script.
+Launch the desktop app from the project folder with `npm run helm-ui`.
 
 Or use the CLI instead — same code, different surface. From the `helm-scout/` folder:
 
@@ -439,6 +440,15 @@ ESP32 camera servers that can handle only one camera client at a time.
 
 The whole pipeline is local: the camera lives on your LAN, the cache lives in your Helm Scout process, the bridge between processes is loopback-only (`127.0.0.1`, bearer-token auth, descriptor in `<dataDir>/control-plane.json` mode `0600`). Nothing transits the cloud — including the bytes a frontier model sees when it asks for a snapshot.
 
+## Drive window preferences
+
+The right-hand controls expand and collapse independently. SR Front ToF is
+first and expanded on first use; the other sections start collapsed. Helm Scout
+remembers every section's state per vehicle across restarts. The Camera section
+has a **Flip horizontally** toggle, also saved per vehicle; it mirrors the desktop
+preview without changing the camera firmware. The NumPad STOP button remains
+accessible when the driving controls are collapsed.
+
 ## Vehicles tab
 
 Per-vehicle cards. Each one shows endpoint, capabilities, and sidecars (camera / mic) with inline add/edit. Expand **Drive tuning** for the action map (rotate intents 90/180° to match a rotated chassis without re-flashing), the default speed, swap-sides, and invert-left/right. A `customized` badge appears when the vehicle has any tuning saved.
@@ -466,7 +476,14 @@ Helm Scout flashes microcontrollers from the same Devices tab you use to inspect
 6. **(Optional) Advanced.** Motor invert / trim. Per-board flash params (FQBN override, `--build-property` for USB-CDC and pin profile, erase-before-upload, post-upload serial capture) are exposed here too; the ESP32-S3 video template offers three pin profiles out of the box (`esp32s3_eye` / `ai_thinker_s3` / `elegoo_s3`).
 7. **Click Flash.** First time on a host, arduino-cli auto-installs the ESP32 core (~5–10 min, one time). Compile + upload streams live below. On success, Helm Scout updates the registry — re-flashing the same robot updates the existing record instead of erroring "vehicle already exists".
 
-If the button is greyed out, a yellow `!` chip next to it names the missing field — no guessing which gate is closed.
+If the button is greyed out, missing-name guidance appears beside the name field;
+other missing settings appear in a yellow `!` chip beside Flash. Selecting
+**create new vehicle** focuses the name field. A reported ten-second typing delay
+remains under investigation.
+
+**Erase before Flash** is supported for Espressif ESP32 boards. It erases the
+entire flash, including saved settings, through the platform upload recipe;
+Helm Scout does not pass an unsupported `--erase` flag to Arduino CLI.
 
 The v1.3 bring-up image uses `esp32:esp32:esp32s3:PSRAM=opi,PartitionScheme=no_ota`; a compile line
 showing `esp32:esp32:esp32` means the classic ESP32 template was selected.

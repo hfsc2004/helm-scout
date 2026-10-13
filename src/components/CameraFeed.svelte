@@ -17,6 +17,8 @@
   const POLL_INTERVAL_MS = 66;        // ~15 fps; the camera is the bottleneck
   const FIRST_FRAME_TIMEOUT_MS = 12000;
 
+  export let flipped = false;
+
   let imgEl: HTMLImageElement | null = null;
   let currentObjectUrl: string | null = null;
   let pollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -177,7 +179,7 @@
 {#if hasCamera}
   <div class="wrap">
     <!-- svelte-ignore a11y-missing-attribute -->
-    <img bind:this={imgEl} alt="Vehicle camera" />
+    <img bind:this={imgEl} class:flipped alt="Vehicle camera" />
     <div class="label" class:stale>{stale ? "CAM · STALE" : "CAM · LIVE"}</div>
   </div>
 {:else}
@@ -208,6 +210,7 @@
     max-height: 100%;
     object-fit: contain;
   }
+  img.flipped { transform: scaleX(-1); }
   .label {
     position: absolute;
     top: 0.75rem;

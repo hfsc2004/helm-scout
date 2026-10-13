@@ -592,7 +592,7 @@ function registerIpcHandlers(opts) {
         const hw = await (0, index_js_2.detectHardware)(process.cwd());
         const classification = (0, index_js_2.classifyForInference)(hw);
         const nvidiaSelection = classification.accelerationType === "nvidia"
-            ? (0, index_js_2.selectNvidiaGpu)(classification)
+            ? await (0, index_js_2.selectNvidiaGpuAsync)(classification)
             : null;
         return { hardware: hw, classification, nvidiaSelection };
     });

@@ -1,9 +1,29 @@
 "use strict";
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
-// @version 1.1.3 - March 5, 2026
+// @version 1.1.4 - October 13, 2026 - identify the actual activity in lifecycle logs
 const fs = require('fs');
 const path = require('path');
+function activityLabel(type) {
+    const labels = {
+        'camera-stream': 'Camera stream',
+        'ipc-state-stream': 'Vehicle telemetry',
+        'ipc-drive': 'Driving session',
+        'ipc-flash': 'Firmware flash session',
+        'arduino-compile': 'Firmware compilation',
+        'arduino-upload': 'Firmware upload',
+        ollama: 'Ollama server'
+    };
+    return labels[type] || type || 'Session';
+}
+function processDetails(pid, port) {
+    const details = [];
+    if (pid != null)
+        details.push(`PID ${pid}`);
+    if (port != null)
+        details.push(`port ${port}`);
+    return details.length ? ` (${details.join(', ')})` : '';
+}
 function createSessionStateManager(deps = {}) {
     const processUtils = deps.processUtils || {};
     const sessionUtils = deps.sessionUtils || {};
@@ -103,11 +123,12 @@ function createSessionStateManager(deps = {}) {
             startTime: new Date().toISOString()
         };
         saveSessions();
-        console.log(`[Session Manager] ✅ Registered session: ${sessionId}`);
-        console.log(`[Session Manager]    Type: ${config.type}`);
-        console.log(`[Session Manager]    Ollama: PID ${config.ollamaPID} on port ${config.ollamaPort}`);
-        if (config.servicePID) {
-            console.log(`[Session Manager]    Service: PID ${config.servicePID} on port ${config.servicePort}`);
+        console.log(`[Session Manager] Tracking ${activityLabel(config.type)}${processDetails(config.pid, config.port)} · ${sessionId}`);
+        if (config.ollamaPID != null || config.ollamaPort != null) {
+            console.log(`[Session Manager]    Ollama server${processDetails(config.ollamaPID, config.ollamaPort)}`);
+        }
+        if (config.servicePID != null || config.servicePort != null) {
+            console.log(`[Session Manager]    Service${processDetails(config.servicePID, config.servicePort)}`);
         }
         return sessionId;
     }
@@ -117,7 +138,7 @@ function createSessionStateManager(deps = {}) {
             console.warn(`[Session Manager] Session not found: ${sessionId}`);
             return false;
         }
-        console.log(`[Session Manager] Closing session: ${sessionId}`);
+        console.log(`[Session Manager] Closing ${activityLabel(session.type)} · ${sessionId}`);
         try {
             if (session.servicePID) {
                 await killProcess(session.servicePID, session.type);
@@ -142,7 +163,7 @@ function createSessionStateManager(deps = {}) {
             }
             delete activeSessions[sessionId];
             saveSessions();
-            console.log(`[Session Manager] ✅ Session closed: ${sessionId}`);
+            console.log(`[Session Manager] Closed ${activityLabel(session.type)} · ${sessionId}`);
             return true;
         }
         catch (err) {

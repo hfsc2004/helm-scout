@@ -44,6 +44,7 @@ const process_js_1 = require("../toolchains/process.js");
 const index_js_1 = require("../toolchains/arduino-cli/index.js");
 const templates_js_1 = require("./templates.js");
 const render_js_1 = require("./render.js");
+const upload_args_js_1 = require("./upload-args.js");
 function jobId() {
     return `flash_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -210,6 +211,11 @@ controller) {
     const fqbn = req.fqbnOverride && req.fqbnOverride.trim()
         ? req.fqbnOverride.trim()
         : tmpl.manifest.fqbn;
+    if (req.eraseBeforeUpload && !fqbn.startsWith("esp32:esp32:")) {
+        const reason = "Erase before Flash is supported only for Espressif ESP32 boards.";
+        onProgress({ stage: "error", message: reason, reason });
+        return { ok: false, reason };
+    }
     onProgress({ stage: "render", message: "applying template variables" });
     const rendered = (0, render_js_1.renderSketch)(tmpl, req.vars);
     if (!rendered.ok) {
@@ -357,10 +363,7 @@ controller) {
         fqbn,
         serialPort: req.port,
     });
-    const uploadArgs = [...cli.baseArgs, "upload", "--fqbn", fqbn, "--port", req.port];
-    if (req.eraseBeforeUpload)
-        uploadArgs.push("--erase");
-    uploadArgs.push(sketchDir);
+    const uploadArgs = (0, upload_args_js_1.buildUploadArgs)(cli.baseArgs, fqbn, req.port, sketchDir, req.eraseBeforeUpload);
     const upload = await (0, process_js_1.runCommandAsync)(cli.bin, uploadArgs, {
         env: cli.env,
         timeoutMs: 300000,

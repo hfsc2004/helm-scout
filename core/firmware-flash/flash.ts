@@ -9,6 +9,7 @@ import { runCommandAsync } from "../toolchains/process.js";
 import { resolveArduinoCli } from "../toolchains/arduino-cli/index.js";
 import { loadTemplate } from "./templates.js";
 import { renderSketch } from "./render.js";
+import { buildUploadArgs } from "./upload-args.js";
 
 /**
  * Flash a microcontroller using arduino-cli.
@@ -67,7 +68,7 @@ export interface FlashRequest {
   fqbnOverride?: string;
   /** Extra --build-property KEY=VALUE pairs for compile (USB-CDC, partitions, …). */
   buildProperties?: string[];
-  /** Pass --erase-flash to arduino-cli upload before writing the new image. */
+  /** Erase all ESP32 flash using the platform upload recipe before writing. */
   eraseBeforeUpload?: boolean;
   /** After a successful upload, hold the port open and stream serial for N ms
    *  so the user can see first-boot output (typical for ESP32-S3 cam boards). */
@@ -305,6 +306,12 @@ export async function flash(
     ? req.fqbnOverride.trim()
     : tmpl.manifest.fqbn;
 
+  if (req.eraseBeforeUpload && !fqbn.startsWith("esp32:esp32:")) {
+    const reason = "Erase before Flash is supported only for Espressif ESP32 boards.";
+    onProgress({ stage: "error", message: reason, reason });
+    return { ok: false, reason };
+  }
+
   onProgress({ stage: "render", message: "applying template variables" });
   const rendered = renderSketch(tmpl, req.vars);
   if (!rendered.ok) {
@@ -484,9 +491,7 @@ export async function flash(
     fqbn,
     serialPort: req.port,
   });
-  const uploadArgs = [...cli.baseArgs, "upload", "--fqbn", fqbn, "--port", req.port];
-  if (req.eraseBeforeUpload) uploadArgs.push("--erase");
-  uploadArgs.push(sketchDir);
+  const uploadArgs = buildUploadArgs(cli.baseArgs, fqbn, req.port, sketchDir, req.eraseBeforeUpload);
   const upload = await runCommandAsync(
     cli.bin,
     uploadArgs,

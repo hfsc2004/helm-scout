@@ -5,6 +5,41 @@ All notable changes to Helm Scout will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.11] - 2026-10-13
+
+### Added
+- Add a camera horizontal-flip toggle in the Drive window, saved per vehicle.
+- Organize Drive controls into collapsible sections. SR Front ToF appears first
+  and initially expanded; all other sections initially collapse. Remember each
+  section's expanded/collapsed state independently per vehicle across restarts.
+- Keep a NumPad STOP button accessible outside the collapsible controls.
+
+### Fixed
+- Implement ESP32 Erase before Flash through the Espressif upload recipe's
+  `upload.erase_cmd=-e` property instead of the unsupported Arduino CLI `--erase` flag.
+  Reject this erase option for other board platforms before compiling.
+- Label Session Manager messages by the tracked activity instead of reporting
+  unrelated camera, IPC, or flash sessions as Ollama activity.
+- Run NVIDIA GPU selection asynchronously in desktop hardware detection so its
+  query does not block Electron's main event loop.
+- Keep the new-vehicle name input mounted, focus it after selecting create-new,
+  and show missing-name guidance beside the field rather than in the footer.
+
+### Validation
+- Svelte checks reported zero errors and warnings; Electron and CLI type checks
+  and all production builds passed. Upload-argument tests passed.
+- Earlier mocked checks covered section persistence and asynchronous GPU-query
+  responsiveness. Native testing has not confirmed the typing-delay repair.
+
+### Known issues
+- The reported roughly ten-second vehicle-name typing delay has not been
+  reproduced or confirmed resolved after the focus and GPU-query changes.
+- One GOOUUU ESP32-S3-CAM reports `cameraReady:false` and HTTP 503 on `/stream`
+  while its sensor services respond. Its camera works on another ESP32;
+  the module, connector, and sensor-board power/connection cause is unresolved.
+  No firmware or hardware pin mappings were changed for this investigation.
+- Restart Helm Scout to load updated main-process code.
+
 ## [0.3.10] - 2026-10-02
 
 ### Added
