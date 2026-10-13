@@ -15,6 +15,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Keep a NumPad STOP button accessible outside the collapsible controls.
 
 ### Fixed
+- Resolve the repository package version when running the compiled CLI.
 - Implement ESP32 Erase before Flash through the Espressif upload recipe's
   `upload.erase_cmd=-e` property instead of the unsupported Arduino CLI `--erase` flag.
   Reject this erase option for other board platforms before compiling.

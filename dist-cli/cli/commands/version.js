@@ -8,7 +8,10 @@ const output_js_1 = require("../output.js");
 const registry_js_1 = require("../registry.js");
 const schema_js_1 = require("../../core/schema.js");
 function readVersion() {
-    const pkgPath = (0, node_path_1.join)(__dirname, "..", "..", "package.json");
+    const sourcePackage = (0, node_path_1.join)(__dirname, "..", "..", "package.json");
+    const pkgPath = (0, node_fs_1.existsSync)(sourcePackage)
+        ? sourcePackage
+        : (0, node_path_1.join)(__dirname, "..", "..", "..", "package.json");
     const raw = (0, node_fs_1.readFileSync)(pkgPath, "utf8");
     const pkg = JSON.parse(raw);
     return pkg.version ?? "0.0.0";
