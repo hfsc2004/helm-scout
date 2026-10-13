@@ -14,6 +14,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectHardware = detectHardware;
 exports.classifyForInference = classifyForInference;
 exports.selectNvidiaGpu = selectNvidiaGpu;
+exports.selectNvidiaGpuAsync = selectNvidiaGpuAsync;
+const node_child_process_1 = require("node:child_process");
+const node_util_1 = require("node:util");
 // Verbatim CommonJS modules from PSF Core.
 const detector = require("./gpu-detector.js");
 const createStartupGpuTools = require("./gpu-select.js");
@@ -59,6 +62,31 @@ function classifyForInference(hardware) {
 function selectNvidiaGpu(classification, override) {
     const { execFileSync } = require("node:child_process");
     const tools = createStartupGpuTools({ execFileSync });
+    return {
+        index: tools.resolvePreferredNvidiaGpuIndex(classification, override?.index),
+        uuid: tools.resolvePreferredNvidiaGpuUuid(classification, override?.uuid),
+    };
+}
+/** Keep GPU selection from blocking Electron's main event loop while forms are open. */
+async function selectNvidiaGpuAsync(classification, override) {
+    let output = "";
+    let failed = false;
+    try {
+        const result = await (0, node_util_1.promisify)(node_child_process_1.execFile)("nvidia-smi", ["--query-gpu=index,memory.total,display_active", "--format=csv,noheader,nounits"], { timeout: 5000, encoding: "utf8" });
+        output = result.stdout;
+    }
+    catch {
+        failed = true;
+    }
+    // Preserve the existing headless-first ranking and fallback rules. Its
+    // injected synchronous reader returns already-collected data immediately.
+    const tools = createStartupGpuTools({
+        execFileSync: (() => {
+            if (failed)
+                throw new Error("GPU query unavailable");
+            return output;
+        }),
+    });
     return {
         index: tools.resolvePreferredNvidiaGpuIndex(classification, override?.index),
         uuid: tools.resolvePreferredNvidiaGpuUuid(classification, override?.uuid),

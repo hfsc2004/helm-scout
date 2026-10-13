@@ -191,7 +191,7 @@
     void send({ kind: "stop" });
   }
 
-  function pressStop(): void {
+  export function pressStop(): void {
     stopPulse();
     void send({ kind: "stop" });
   }

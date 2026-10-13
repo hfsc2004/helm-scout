@@ -2,6 +2,7 @@
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { persistentDetails } from "../actions/persistentDetails";
   import { fleet, vehicleState } from "../stores/vehicles";
   import { inputMode } from "../stores/inputMode";
   import Numpad from "../components/Numpad.svelte";
@@ -17,6 +18,19 @@
   import AudioLibrary from "../components/AudioLibrary.svelte";
   import UnoKeyboard from "../components/UnoKeyboard.svelte";
   import { hasDriveControl } from "@shared/vehicle-contract";
+
+  let cameraFlipped = false;
+  let numpad: Numpad | null = null;
+  function loadCameraFlip(vehicleId: string | null): boolean {
+    try { return vehicleId !== null && localStorage.getItem(`psf-helm:camera-flip:${vehicleId}`) === "true"; }
+    catch { return false; }
+  }
+  function saveCameraFlip(): void {
+    if (!$fleet.selectedId) return;
+    try { localStorage.setItem(`psf-helm:camera-flip:${$fleet.selectedId}`, String(cameraFlipped)); }
+    catch { /* Keep the toggle usable when storage is unavailable. */ }
+  }
+  $: cameraFlipped = loadCameraFlip($fleet.selectedId);
 
   $: selectedVehicle = $fleet.vehicles.find((v) => v.id === $fleet.selectedId) ?? null;
   $: canDrive = selectedVehicle ? hasDriveControl(selectedVehicle) : false;
@@ -37,7 +51,7 @@
 <div class="layout">
   <div class="stage">
     <div class="camera">
-      <CameraFeed />
+      <CameraFeed flipped={cameraFlipped} />
     </div>
     <AudioFeed />
     {#if canDrive}<IntentBar />{/if}
@@ -54,24 +68,33 @@
     {:else if !canDrive}
       {#if selectedVehicle?.sensorBoardRevision === "1.3"}
         {#key selectedVehicle.id}
-          <UnoKeyboard vehicleId={selectedVehicle.id} mode={$inputMode} />
           <SensorBoardReadouts vehicleId={selectedVehicle.id} />
+          <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "uno-driving" }}><summary>Driving</summary><UnoKeyboard vehicleId={selectedVehicle.id} mode={$inputMode} /></details>
         {/key}
       {:else}
         <section><p class="muted">Motor controls and drive telemetry are not available for this vehicle.</p></section>
       {/if}
     {:else}
+      {#if $inputMode !== "gamepad"}<button class="stop" on:click={() => numpad?.pressStop()}>STOP</button>{/if}
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "driving" }}><summary>Driving controls</summary>
       {#if $inputMode === "gamepad"}
         <Gamepad />
       {:else}
-        <Numpad mode={$inputMode} />
+        <Numpad bind:this={numpad} mode={$inputMode} />
       {/if}
-      <SpeedSlider />
-      <StateReadouts />
-      <ActivityLog />
+      </details>
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "speed" }}><summary>Speed</summary><SpeedSlider /></details>
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "vehicle-state" }}><summary>Vehicle state</summary><StateReadouts /></details>
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "activity" }}><summary>Activity</summary><ActivityLog /></details>
+    {/if}
+    {#if selectedVehicle?.camera}
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "camera" }}><summary>Camera</summary>
+        <section><label class="camera-toggle"><input type="checkbox" bind:checked={cameraFlipped} on:change={saveCameraFlip} /> Flip horizontally</label></section>
+      </details>
     {/if}
     {#if selectedVehicle?.sensorBoardRevision === "1.3"}
-      <div class="audio-library"><AudioLibrary vehicleId={selectedVehicle.id} /><LightLibrary vehicleId={selectedVehicle.id} /></div>
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "audio" }}><summary>Audio</summary><AudioLibrary vehicleId={selectedVehicle.id} /></details>
+      <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "leds" }}><summary>LEDs</summary><LightLibrary vehicleId={selectedVehicle.id} /></details>
     {/if}
   </aside>
 </div>
@@ -101,7 +124,12 @@
     justify-content: center;
     overflow: hidden;
   }
-  .audio-library { margin-top: auto; }
+  .stop { margin: 0.75rem 1rem; padding: 0.65rem; background: var(--danger, #f85149); color: white; border: 0; border-radius: 4px; font-weight: 700; cursor: pointer; }
+  details { border-bottom: 1px solid var(--border); }
+  summary { padding: 0.85rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+  summary:hover { background: var(--surface-2, #1c232c); }
+  summary:focus-visible { outline: 2px solid var(--accent, #58a6ff); outline-offset: -2px; }
+  .camera-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
   .rail {
     display: flex;
     flex-direction: column;

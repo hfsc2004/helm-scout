@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import type {
     FlashStartRequest,
     FlashStreamEvent,
@@ -204,6 +204,12 @@
   // video board. Optional — if blank, the user can wire it up later from
   // the Vehicles tab.
   let attachToVehicleId = "";
+  let vehicleNameInput: HTMLInputElement | null = null;
+  async function onVehicleSelectionChange(): Promise<void> {
+    if (attachToVehicleId) return;
+    await tick();
+    vehicleNameInput?.focus();
+  }
   $: fleetVehicles = $fleet.vehicles;
 
   // Track which fields the user has typed in so we don't overwrite their input
@@ -621,24 +627,27 @@
         {/if}
         <label>
           <span class="lbl">Existing vehicle (optional)</span>
-          <select bind:value={attachToVehicleId} disabled={flashing}>
+          <select bind:value={attachToVehicleId} on:change={onVehicleSelectionChange} disabled={flashing}>
             <option value="">— create new vehicle —</option>
             {#each fleetVehicles as v (v.id)}
               <option value={v.id}>{v.name} ({v.transport?.host ?? v.camera?.baseUrl ?? "camera only"})</option>
             {/each}
           </select>
         </label>
-        {#if !attachToVehicleId}
-          <label>
-            <span class="lbl">New vehicle name</span>
-            <input
-              type="text"
-              bind:value={vehicleName}
-              on:input={() => markTouched("vehicleName")}
-              placeholder="Truck"
-              disabled={flashing}
-            />
-          </label>
+        <label>
+          <span class="lbl">New vehicle name</span>
+          <input
+            type="text"
+            bind:this={vehicleNameInput}
+            bind:value={vehicleName}
+            on:input={() => markTouched("vehicleName")}
+            placeholder="Truck"
+            disabled={flashing || !!attachToVehicleId}
+            aria-describedby={!attachToVehicleId && !vehicleName.trim() ? "vehicle-name-hint" : undefined}
+          />
+        </label>
+        {#if !attachToVehicleId && !vehicleName.trim()}
+          <p id="vehicle-name-hint" class="muted small">Enter a name for the new vehicle here.</p>
         {/if}
       </section>
     {:else}
@@ -648,12 +657,17 @@
           <span class="lbl">Name</span>
           <input
             type="text"
+            bind:this={vehicleNameInput}
             bind:value={vehicleName}
             on:input={() => markTouched("vehicleName")}
             placeholder="Truck"
             disabled={flashing}
+            aria-describedby={!vehicleName.trim() ? "vehicle-name-hint" : undefined}
           />
         </label>
+        {#if !vehicleName.trim()}
+          <p id="vehicle-name-hint" class="muted small">Enter a name for the new vehicle here.</p>
+        {/if}
         <p class="muted small">
           ID: <code>{vehicleSlug || "—"}</code>
         </p>
@@ -915,8 +929,8 @@
           Cancel
         </button>
       {/if}
-      {#if !flashing && blockReason}
-        <span class="block-reason" role="status" aria-live="polite">
+      {#if !flashing && blockReason && !blockReason.startsWith("enter a vehicle name")}
+        <span class="block-reason">
           <span class="block-icon" aria-hidden="true">!</span>
           {blockReason}
         </span>
@@ -1161,6 +1175,7 @@
     cursor: pointer;
   }
   .block-reason {
+    pointer-events: none;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;

@@ -10,6 +10,9 @@
  * "modernize" the implementation; it works.
  */
 
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
 // Verbatim CommonJS modules from PSF Core.
 const detector = require("./gpu-detector.js") as {
   detectAll(appDir: string): Promise<HardwareInfo>;
@@ -102,6 +105,35 @@ export function selectNvidiaGpu(
 ): { index: number | null; uuid: string } {
   const { execFileSync } = require("node:child_process") as typeof import("node:child_process");
   const tools = createStartupGpuTools({ execFileSync });
+  return {
+    index: tools.resolvePreferredNvidiaGpuIndex(classification, override?.index),
+    uuid: tools.resolvePreferredNvidiaGpuUuid(classification, override?.uuid),
+  };
+}
+
+/** Keep GPU selection from blocking Electron's main event loop while forms are open. */
+export async function selectNvidiaGpuAsync(
+  classification: GpuClassification,
+  override?: { index?: number; uuid?: string }
+): Promise<{ index: number | null; uuid: string }> {
+  let output = "";
+  let failed = false;
+  try {
+    const result = await promisify(execFile)(
+      "nvidia-smi",
+      ["--query-gpu=index,memory.total,display_active", "--format=csv,noheader,nounits"],
+      { timeout: 5000, encoding: "utf8" }
+    );
+    output = result.stdout;
+  } catch { failed = true; }
+  // Preserve the existing headless-first ranking and fallback rules. Its
+  // injected synchronous reader returns already-collected data immediately.
+  const tools = createStartupGpuTools({
+    execFileSync: (() => {
+      if (failed) throw new Error("GPU query unavailable");
+      return output;
+    }) as unknown as typeof import("node:child_process").execFileSync,
+  });
   return {
     index: tools.resolvePreferredNvidiaGpuIndex(classification, override?.index),
     uuid: tools.resolvePreferredNvidiaGpuUuid(classification, override?.uuid),

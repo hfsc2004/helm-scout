@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
+  import { persistentDetails } from "../actions/persistentDetails";
   import { onMount } from "svelte";
   import type { SensorBoardScanZone, SensorBoardSnapshotResponse } from "@shared/ipc-channels";
   import { isWideTofProfile, WIDE_TOF_PROFILES, type WideTofProfile } from "@shared/wide-tof";
@@ -214,33 +215,8 @@
 </script>
 
 <section class="sensor-panel">
-  <h2>Sensor Board v1.3</h2>
-  <p class="status">
-    {#if !snapshot}Connecting…
-    {:else if snapshot.error}{snapshot.error}{updatedAt ? ` · last update ${new Date(updatedAt).toLocaleTimeString()}` : ""}
-    {:else}Live · updated {new Date(updatedAt).toLocaleTimeString()}{/if}
-  </p>
-
-  <h3>LR Distance</h3>
-  {#each ["front", "rear"] as name}
-    {@const sensor = snapshot?.ranges?.singleZone?.find((item) => item.name === name)}
-    <div class="readout"><span>LR {name === "front" ? "Front" : "Rear"} ToF</span><strong>{rangeText(snapshot?.ranges ?? null, name)}</strong></div>
-    {#if sensor?.scan?.zones?.length === 5}
-      <div class="scan-list" aria-label={`${name} ToF scan regions`}>
-        {#each sensor.scan.zones as zone}
-          <div class="scan-row" title={scanTargetTitle(zone)}>
-            <span>{scanZoneLabels[zone.id] ?? zone.id}</span>
-            <strong>{scanValue(zone)}</strong>
-            <small>{scanDetail(zone)}</small>
-          </div>
-        {/each}
-      </div>
-      <p class="hint">Full field: {sensor.mode ?? "?"} mode · quadrants: {sensor.scan.quadrantMode} mode. Confirmed readings persist but are marked stale; latest raw targets are in each row’s tooltip.</p>
-    {/if}
-  {/each}
-  <p class="hint">Quadrant names are chip-ROI coordinates, not verified physical left/right. A missing return does not mean the path is clear.</p>
-
-  <h3>SR Front ToF · {gridSide}×{gridSide}</h3>
+  <details use:persistentDetails={{ vehicleId, section: "sr-front", defaultOpen: true }}><summary>SR Front ToF · {gridSide}×{gridSide}</summary>
+  <div class="section-content">
   <div class="wide-controls">
     <label>Profile
       <select value={profileChoice} disabled={wideBusy || !canConfigureWide}
@@ -296,7 +272,28 @@
     <p class="hint">Waiting for a fresh {gridSide}×{gridSide} frame.</p>
   {/if}
 
-  <h3>IMU <small>(chip axes)</small></h3>
+  </div></details>
+  {#each ["front", "rear"] as name}
+    {@const sensor = snapshot?.ranges?.singleZone?.find((item) => item.name === name)}
+    <details use:persistentDetails={{ vehicleId, section: `lr-${name}` }}><summary>LR {name === "front" ? "Front" : "Rear"} ToF</summary><div class="section-content">
+    <div class="readout"><span>Distance</span><strong>{rangeText(snapshot?.ranges ?? null, name)}</strong></div>
+    {#if sensor?.scan?.zones?.length === 5}
+      <div class="scan-list" aria-label={`${name} ToF scan regions`}>
+        {#each sensor.scan.zones as zone}
+          <div class="scan-row" title={scanTargetTitle(zone)}>
+            <span>{scanZoneLabels[zone.id] ?? zone.id}</span>
+            <strong>{scanValue(zone)}</strong>
+            <small>{scanDetail(zone)}</small>
+          </div>
+        {/each}
+      </div>
+      <p class="hint">Full field: {sensor.mode ?? "?"} mode · quadrants: {sensor.scan.quadrantMode} mode. Confirmed readings persist but are marked stale; latest raw targets are in each row’s tooltip.</p>
+    {/if}
+    <p class="hint">Quadrant names are chip-ROI coordinates, not verified physical left/right. A missing return does not mean the path is clear.</p>
+    </div></details>
+  {/each}
+
+  <details use:persistentDetails={{ vehicleId, section: "imu" }}><summary>IMU · orientation and motion</summary><div class="section-content">
   {#if imuUpdatedAt}<p class="hint">{ageLabel(imuUpdatedAt, now)}</p>{/if}
   <h3>Orientation <small>(relative to boot pose)</small></h3>
   {#if snapshot?.imu?.orientationReady === false}
@@ -317,15 +314,26 @@
   <div class="readout"><span>Gyro Y</span><strong>{axis(snapshot?.imu?.gyroDps, 1, "°/s")}</strong></div>
   <div class="readout"><span>Gyro Z</span><strong>{axis(snapshot?.imu?.gyroDps, 2, "°/s")}</strong></div>
 
-  <h3>Board</h3>
+  </div></details>
+  <details use:persistentDetails={{ vehicleId, section: "board" }}><summary>Board status</summary><div class="section-content">
+  <p class="status">
+    {#if !snapshot}Connecting…
+    {:else if snapshot.error}{snapshot.error}{updatedAt ? ` · last update ${new Date(updatedAt).toLocaleTimeString()}` : ""}
+    {:else}Live · updated {new Date(updatedAt).toLocaleTimeString()}{/if}
+  </p>
   <div class="readout"><span>Wi‑Fi signal{ageLabel(signalUpdatedAt, now)}</span><strong>{snapshot?.rssi == null ? "—" : `${snapshot.rssi} dBm`}</strong></div>
   <div class="readout"><span>IMU temperature</span><strong>{snapshot?.imu?.temperatureC == null ? "—" : `${snapshot.imu.temperatureC.toFixed(1)} °C / ${(snapshot.imu.temperatureC * 9 / 5 + 32).toFixed(1)} °F`}</strong></div>
   <p class="hint">IMU die temperature is not room temperature.</p>
+  </div></details>
 </section>
 
 <style>
-  .sensor-panel { padding: 1rem; color: var(--text); }
-  h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+  .sensor-panel { color: var(--text); }
+  details { border-bottom: 1px solid var(--border); }
+  summary { padding: 0.85rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+  summary:hover { background: var(--surface-2, #1c232c); }
+  summary:focus-visible { outline: 2px solid var(--accent, #58a6ff); outline-offset: -2px; }
+  .section-content { padding: 0 1rem 1rem; }
   h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 1.25rem 0 0.55rem; color: var(--muted); }
   small { font-size: 0.7rem; text-transform: none; letter-spacing: normal; }
   .status, .hint { color: var(--muted); font-size: 0.75rem; line-height: 1.4; margin: 0.35rem 0; }

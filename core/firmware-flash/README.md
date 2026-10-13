@@ -7,6 +7,7 @@ Compile + upload sketches to microcontrollers using Helm Scout's private arduino
 - `templates.ts` — load sketch templates from `<repo>/firmware/templates/<id>/`
 - `render.ts` — validate user-supplied vars against the manifest, substitute `{{placeholders}}`, derive `.octets` for IPv4 strings
 - `flash.ts` — the lifecycle: render → resolve arduino-cli → ensure core installed → compile → upload, with NDJSON-shaped progress events
+- `upload-args.ts` — upload arguments and ESP32 full-flash erase recipe property
 - `index.ts` — typed surface
 
 ## Templates
@@ -36,3 +37,9 @@ The arduino-cli compile and upload subprocesses each register with BMOC. Window-
 
 - Pico/Pico 2 flashing via mpremote (separate template kind; uses `core/toolchains/mpremote/`)
 - Devices-tab UI to pick a template + fill vars + watch progress (B3)
+
+## Erase before Flash
+
+For `esp32:esp32:*` boards, erase uses `--upload-property upload.erase_cmd=-e`.
+Arduino CLI upload has no `--erase` flag. Other platforms are rejected when
+erasure is requested. Erasing clears the entire flash, including saved settings.

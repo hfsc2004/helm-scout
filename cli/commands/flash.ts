@@ -137,7 +137,7 @@ const flashCmd: RuntimeCommand = {
         name: "erase",
         kind: "boolean",
         default: false,
-        description: "Pass --erase to arduino-cli upload before writing.",
+        description: "Erase all ESP32 flash before writing the new image.",
       },
       {
         name: "capture-runtime-serial-ms",
