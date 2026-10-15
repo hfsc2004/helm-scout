@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
+  import { boardOperations } from "../lib/bench-activity";
   import { onMount } from "svelte";
   import type { AudioLibraryEntry } from "@shared/ipc-channels";
   export let vehicleId: string;
@@ -23,7 +24,7 @@
     finally { busy = false; }
   }
   async function play() {
-    if (!selectedEntry) return;
+    if (!selectedEntry || $boardOperations[vehicleId]) return;
     const name = selectedEntry.name;
     playing = true; error = ""; status = `Playing ${name}…`;
     try { await window.helm.audio.play({ vehicleId, audioId: selected }); status = `Played ${name}`; }
@@ -43,7 +44,7 @@
   <div class="controls">
     <button on:click={() => manage("add")} disabled={busy || playing}>Add…</button>
     <button on:click={() => manage("remove")} disabled={busy || playing || !selectedEntry} title="Remove from library; keep original file">Remove</button>
-    <button class="play" on:click={play} disabled={busy || playing || !selectedEntry || !filtered.some(entry => entry.id === selected)}>{playing ? "Playing…" : "Play to robot"}</button>
+    <button class="play" on:click={play} disabled={busy || playing || !!$boardOperations[vehicleId] || !selectedEntry || !filtered.some(entry => entry.id === selected)}>{playing ? "Playing…" : "Play to robot"}</button>
   </div>
   {#if status}<p role="status">{status}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}

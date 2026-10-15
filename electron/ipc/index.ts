@@ -1,3 +1,8 @@
+import { registerBenchHandlers } from "./bench.js";
+import { sensorControls } from "../../core/vehicles/sensor-controls.js";
+import type { SensorControlRequest } from "../../shared/ipc-channels.js";
+import { rebootBoard } from "../../core/vehicles/reboot.js";
+import type { VehicleRebootRequest } from "../../shared/ipc-channels.js";
 import { registerLightHandlers } from "./lights.js";
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
@@ -355,6 +360,22 @@ export function registerIpcHandlers(opts: { version: string }): void {
     if (!vehicle) return { ok: false, ready: false, error: "Vehicle not found." };
     try { return await readWideTof(vehicle); }
     catch (error) { return { ok: false, ready: false, error: error instanceof Error ? error.message : String(error) }; }
+  });
+
+  registerBenchHandlers();
+
+  ipcMain.handle(IPC.vehicle.sensors, async (_e, req: SensorControlRequest) => {
+    const vehicle = registry.get(req.vehicleId);
+    if (!vehicle) return { ok: false, error: "Vehicle not found." };
+    try { return await sensorControls(vehicle, req.sensor, req.enabled); }
+    catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
+  });
+
+  ipcMain.handle(IPC.vehicle.reboot, async (_e, req: VehicleRebootRequest) => {
+    const vehicle = registry.get(req.vehicleId);
+    if (!vehicle) return { ok: false, error: "Vehicle not found." };
+    try { return await rebootBoard(vehicle, req.board); }
+    catch (error) { return { ok: false, error: error instanceof Error ? error.message : String(error) }; }
   });
 
   ipcMain.handle(IPC.vehicle.sensorBoardUno, async (_e, req: SensorBoardUnoRequest): Promise<SensorBoardUnoResponse> => {

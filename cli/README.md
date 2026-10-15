@@ -186,3 +186,27 @@ The Driver panel now provides persistent Audio and LED script libraries; LED
 shows support multiple independently programmed lights per line, steady or
 flashing behavior, timed No Action pauses, looping, and Stop. IR is one shared
 bank. ESP32 onboard LED GPIO mappings are still unresolved.
+
+### Reboot a board
+
+`helm vehicle-reboot <id> drive|video` restarts one board. `video` means the
+camera/sensor ESP32, including Sensor Board v1.3. The Vehicles screen also has
+separate reboot buttons on each vehicle card. Updated firmware is required on
+each board; older images report an upgrade error. No firmware is uploaded by a
+reboot request. Runtime settings return to their boot defaults.
+
+Reboot uses `POST /reboot`: the drive control port for `drive`, and port 82 on
+the camera host for `video`. Camera reboot remains available during MJPEG
+streaming. The drive-board handler stops its motors before acknowledging and
+restarting; the v1.3 handler sends the existing Uno drive-stop command first.
+An acknowledgement means reboot was accepted, not that reconnection completed.
+
+### Individual sensor controls (v1.3)
+
+Use `helm vehicle-sensors <id> status` to read all four sensor states, or
+`helm vehicle-sensors <id> <front|rear|wide|imu> <on|off>` to change one.
+`front`/`rear` are the LR ToFs; `wide` is SR Front. Off stops ToF ranging or
+the IMU accelerometer/gyro; it does not cut board power. Reboot enables all
+sensors. Re-enabling the IMU resets calibration, so keep the board stationary.
+The Driver sensor panel also exposes these controls. Updated v1.3 firmware is
+required; the command never flashes firmware.

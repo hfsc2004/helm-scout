@@ -1,7 +1,7 @@
 {
   "name": "psf-helm",
   "productName": "Helm Scout",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "Drive your robot truck \u2014 or fly your drone \u2014 by telling it what to do. Helm Scout is a local-first desktop app that pairs natural-language control with any llama.cpp model, runs entirely on your machine, and stays out of the cloud.",
   "author": "Pseudo Science Fiction",
   "license": "Apache-2.0",

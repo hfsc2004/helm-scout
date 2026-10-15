@@ -33,3 +33,30 @@ body {
   color: var(--fg);
   overflow: hidden;
 }
+
+/* Shared controls in the Drive sensor/camera collapsible sections. */
+.bench-controls { padding: .25rem 0; color: var(--fg); font-size: .78rem; min-width: 0; }
+.bench-controls h4 { margin: .8rem 0 .45rem; font-size: .8rem; }
+.bench-controls label { display: flex; flex-direction: column; gap: .3rem; margin: .6rem 0; }
+.bench-controls label.inline { flex-direction: row; align-items: center; }
+.bench-controls input:not([type="checkbox"]), .bench-controls select { width: 100%; min-width: 0; padding: .4rem; background: var(--bg); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; font: inherit; }
+.bench-controls button { padding: .4rem .5rem; margin: .25rem .25rem .25rem 0; font: inherit; cursor: pointer; }
+.bench-controls button:disabled { opacity: .5; cursor: default; }
+.bench-controls .button-row { display: flex; flex-wrap: wrap; }
+.bench-controls .hint { font-size: .74rem; line-height: 1.45; color: var(--muted); }
+.bench-controls .error { color: #ff9090; overflow-wrap: anywhere; }
+.bench-controls p { overflow-wrap: anywhere; }
+.bench-controls details { border-top: 1px solid var(--border); margin-top: .6rem; padding: .5rem 0; }
+.bench-controls summary { cursor: pointer; padding: .35rem 0; font-weight: 600; }
+.bench-controls fieldset { border: 1px solid var(--border); margin: .7rem 0; padding: .5rem; min-width: 0; }
+.bench-controls .health-list { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem; }
+.bench-controls dt { color: var(--muted); }
+.bench-controls dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.bench-controls .sensor-health { display: grid; grid-template-columns: 1fr auto; gap: .25rem; margin: .65rem 0; }
+.bench-controls .sensor-health small { grid-column: 1 / -1; color: var(--muted); }
+.bench-controls .test-list, .bench-controls .event-list { padding-left: 1rem; }
+.bench-controls li { margin: .5rem 0; }
+.bench-controls li span, .bench-controls li small { display: block; color: var(--muted); }
+.bench-controls .event-list { max-height: 18rem; overflow-y: auto; }
+.bench-controls pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .7rem; }
+.bench-controls .recorded-frame { width: 100%; height: auto; }

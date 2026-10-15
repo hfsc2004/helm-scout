@@ -1,3 +1,4 @@
+import type { BenchRequest, BenchResponse, OtaSelection, BoardUpdateRequest, BoardUpdateResponse } from "./bench.js";
 import type { LightScript, LightPlayback } from "./light-scripts.js";
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Pseudo Science Fiction
@@ -431,6 +432,11 @@ export interface HelmAPI {
     sensorBoardSnapshot(req: SensorBoardSnapshotRequest): Promise<SensorBoardSnapshotResponse>;
     sensorBoardWideConfigure(req: SensorBoardWideConfigureRequest): Promise<SensorBoardWideRange>;
     sensorBoardWideSnapshot(req: SensorBoardSnapshotRequest): Promise<SensorBoardWideRange>;
+    bench(req: BenchRequest): Promise<BenchResponse>;
+    chooseBoardFirmware(): Promise<OtaSelection>;
+    updateBoard(req: BoardUpdateRequest): Promise<BoardUpdateResponse>;
+    sensors(req: SensorControlRequest): Promise<SensorControlResponse>;
+    reboot(req: VehicleRebootRequest): Promise<VehicleRebootResponse>;
     sensorBoardUno(req: SensorBoardUnoRequest): Promise<SensorBoardUnoResponse>;
     streamState(req: StateStreamRequest, onEvent: (e: StateStreamEvent) => void): Promise<{
       handle: StreamHandle;
@@ -496,6 +502,11 @@ export const IPC = {
     sensorBoardSnapshot: "vehicle:sensor-board-snapshot",
     sensorBoardWideConfigure: "vehicle:sensor-board-wide-configure",
     sensorBoardWideSnapshot: "vehicle:sensor-board-wide-snapshot",
+    bench: "vehicle:bench",
+    chooseBoardFirmware: "vehicle:choose-board-firmware",
+    updateBoard: "vehicle:update-board",
+    sensors: "vehicle:sensors",
+    reboot: "vehicle:reboot",
     sensorBoardUno: "vehicle:sensor-board-uno",
     streamStateOpen: "vehicle:stream-state-open",
     streamStateClose: "vehicle:stream-state-close",
@@ -524,3 +535,21 @@ export const IPC = {
     eventPrefix: "flash:event:",
   },
 } as const;
+
+export interface VehicleRebootRequest {
+  vehicleId: string;
+  board: "drive" | "video";
+}
+export interface VehicleRebootResponse {
+  ok: boolean;
+  rebooting?: boolean;
+  error?: string;
+}
+
+export type SensorName = "front" | "rear" | "wide" | "imu";
+export interface SensorControlRequest { vehicleId: string; sensor?: SensorName; enabled?: boolean }
+export interface SensorControlResponse {
+  ok: boolean;
+  sensors?: Record<SensorName, { enabled: boolean; ready: boolean }>;
+  error?: string;
+}

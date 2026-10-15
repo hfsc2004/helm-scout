@@ -5,6 +5,37 @@ All notable changes to Helm Scout will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.12] - 2026-10-15
+
+### Added
+- Add Sensor Board v1.3 runtime camera resolution and image controls, independent
+  ToF/IMU toggles, targeted sensor recovery, calibration, event thresholds,
+  diagnostics, explicit saved boot settings, local recording/replay, and optional
+  password-protected OTA updates and manual rollback.
+- Expose board controls in the appropriate collapsible Drive sections and add
+  board reboot commands to Scout and the CLI.
+- Add clockwise/counter-clockwise camera display rotation, saved per vehicle.
+- Add optional secondary Wi-Fi credentials to all ESP32 templates, with automatic
+  failover and DHCP on the secondary network.
+
+### Fixed
+- Stop SR Front ToF ranging with hardware acknowledgement and verify sleep before
+  reporting Off (sensor firmware bench-13); waking retains the selected profile.
+- Scroll expanded controls into view near the window edge and restore the prior
+  position on collapse when the user has not manually scrolled elsewhere.
+- Apply numeric camera, calibration, and event settings with Enter, using the
+  same validation and busy-state protections as their Apply buttons.
+
+### Validation and deployment
+- Svelte/TypeScript checks, production builds, TypeScript regression tests, and
+  native firmware helper tests passed. All three ESP32 templates compiled during
+  development, including sensor firmware bench-13.
+- Firmware changes require flashing the corresponding board. No boards were
+  flashed as part of this release preparation; physical SR emitter shutdown still
+  needs verification with bench-13. Restart Scout for main-process changes.
+- JPEG quality retains its existing range; low-number settings can depend on
+  resolution and available camera resources.
+
 ## [0.3.11] - 2026-10-13
 
 ### Added

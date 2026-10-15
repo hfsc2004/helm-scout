@@ -7,6 +7,21 @@ motor commands use the separate ELEGOO Uno UART bridge; this image has no
 drive-board IR collision guard or native skid-steer `/cmd` endpoint. No
 separate drive ESP32 is assumed for this v1.3 bring-up configuration.
 
+## Live camera resolution
+
+The diagnostic server on port 82 supports `GET /camera/resolution` to read the
+active size and `POST /camera/resolution?size=VGA` to change it while running.
+Accepted names are `QVGA` (320×240), `VGA` (640×480), `SVGA` (800×600),
+`XGA` (1024×768), and `HD` (1280×720). Invalid names return HTTP 400;
+unavailable or busy cameras and sensor failures return HTTP 503.
+
+Changes are serialized with capture and MJPEG delivery, and queued frames are
+discarded after switching. The stream may pause briefly. Buffers are allocated
+for HD at initialization so switching upward does not require a reboot.
+The flash-time `camera.frameSize` remains the boot default; runtime changes are
+not saved across reboot. This feature requires uploading the updated firmware
+once; the existing Scout flashing screen needs no additional option.
+
 ## Implemented
 
 - Camera on port 81: `GET /health`, `GET /capture`, `GET /stream`.
@@ -411,7 +426,7 @@ pin profile. The Sensor Board's own USB-C socket is power-only. Use the
 ESP32-S3-CAM module's programming connector for flashing, after confirming
 the module and serial port.
 
-The default FQBN is `esp32:esp32:esp32s3:PSRAM=opi,PartitionScheme=no_ota,LoopCore=1,EventsCore=0`,
+The default FQBN is `esp32:esp32:esp32s3:PSRAM=opi,PartitionScheme=min_spiffs,LoopCore=1,EventsCore=0`,
 used for both tested modules, including the Freenove N16R8 replacement. The
 2 MB app partition fits the CB driver even on a 4 MB module; it does not
 support OTA updates. Set `camera.hmirror=true` for the tested Freenove camera.
@@ -517,3 +532,186 @@ older clients but still blocks other diagnostics while uploading. Helm Scout and
 CLI probe port 83 automatically and fall back to 82 for older firmware.
 Compilation and desktop transport checks do not establish on-robot timing:
 flash this build, restart Helm Scout, then verify a light show during a long sound.
+
+### Remote board reboot
+
+`POST /reboot` on diagnostic port 82 replies with
+`{"ok":true,"rebooting":true}` before restarting the ESP32. It remains reachable
+while MJPEG streams on port 81. The handler sends the existing Uno drive-stop
+command before restarting (this does not reboot the Uno). Runtime settings and
+held microphone conditions return to their boot defaults. Scout exposes this in
+the Vehicles card and through `helm vehicle-reboot <id> video`.
+
+### Individual sensor measurement controls
+
+`GET /sensors` on port 82 returns `enabled` and `ready` for `front` (LR Front),
+`rear` (LR Rear), `wide` (SR Front), and `imu`. Use
+`POST /sensors?sensor=front&enabled=0` to stop one sensor, or `enabled=1` to
+resume it. Names and state values are validated; invalid requests return 400,
+and hardware failures return 503. Repeating the current state is harmless.
+
+ToF off stops ranging while retaining the sensor's address, configuration, and
+loaded firmware. It does not change XSHUT/LPn or the shared expander outputs.
+IMU off writes and verifies PWR_MGMT0=0, stopping its accelerometer and gyro.
+This is measurement control, not removal of board power. All sensors default
+to enabled on reboot unless explicit saved settings override that default. A ToF that failed boot initialization requires checking
+the hardware and rebooting; the toggle does not reassign addresses on a live bus.
+
+Cached frames are cleared on successful ToF transitions. IMU samples and
+orientation calibration are reset on toggles; hold the board stationary after
+re-enabling. `/imu` does not automatically wake an intentionally disabled IMU.
+Profile/mode changes do not implicitly enable a disabled ToF.
+
+The Driver sensor panel exposes all four toggles. CLI examples:
+`helm vehicle-sensors <id> status`, `helm vehicle-sensors <id> wide off`, and
+`helm vehicle-sensors <id> imu on`. The updated firmware must be uploaded once
+before these controls work.
+
+## Extended bench firmware API (bench-12)
+
+These additions are in the **Sensor Board v1.3 firmware**. They are not new Scout
+buttons. Use diagnostic port 82. All changes are volatile unless explicitly
+saved. No new hardware pins or collision-control behavior are introduced.
+
+| Endpoint | Operation |
+| --- | --- |
+| `GET /system` | Build ID/date, boot ID, uptime, numeric ESP reset reason, free/minimum heap, largest allocation, PSRAM, camera frame count, sensor frame/error counts, measured rates, data age, and OTA partition status. |
+| `GET /samples` | Cached LR distances and IMU vectors with individual acquisition times, plus wide frame sequence/time. This does not trigger measurements or synchronize sensor exposure. Full wide data remains at `/wide-range`. |
+| `GET /self-test` | Non-destructive address/IMU power-register/freshness checks. `ok` means the test ran; `pass` is its result. Disabled sensors need address presence but no fresh sample. No motors, speaker tones, or lights are triggered. |
+| `POST /sensors/recover?sensor=front` | Reinitialize `front`, `rear`, `wide`, or `imu`, preserving its on/off state and ToF mode/profile. Frames are invalidated. IMU recalibrates. |
+| `GET /settings` | Saved-settings schema/load status and whether boot application succeeded. |
+| `POST /settings?action=save` | Save current sensor enables, camera controls/resolution, ToF settings, manual IMU calibration/mounting, and event thresholds in a versioned, checked NVS record. |
+| `POST /settings?action=defaults` | Erase that saved record. **Reboot explicitly** to apply flash-time/default settings. Does not erase Wi-Fi credentials or unrelated NVS. |
+| `GET /camera/controls` | Read current camera settings. |
+| `POST /camera/controls?control=brightness&value=1` | Change one camera control; sensor rejection is reported as an error. |
+| `GET /imu/calibration` | Read manual chip-axis corrections and configured axis mapping. |
+| `POST /imu/calibration?...` | Validate/apply manual calibration atomically, clear motion data, and restart stationary calibration. |
+| `GET /events?after=0` | Read up to 32 retained proximity/tilt/impact/motion transitions with sequence, boot ID, uptime, sensor, state and value. |
+| `POST /events?proximityMm=300` | Change event thresholds; does not command motors or change any collision guard. |
+| `POST /ota` | Password-authenticated multipart firmware upload to an inactive OTA app slot, followed by reboot after image verification and acknowledgement. |
+| `POST /ota/rollback` | Authenticated manual return to a previous bootable image, when one exists. |
+
+Recovery uses existing assigned addresses and driver initialization, **not** a
+shared power-cycle or guessed XSHUT pins. Narrow sensors that lost their assigned
+address, or a wide sensor that never initialized, still require hardware checks
+and a board reboot. Recovery refuses while Uno drive or speaker playback is
+active. It can take several seconds, especially for the wide sensor's firmware
+upload; allow a longer HTTP timeout. Other diagnostic polling pauses during it.
+
+The measured rates count successful driver frames/IMU samples, not HTTP polls
+or guaranteed valid targets. Narrow counts include the alternating ROI phases.
+Driver error counts and I²C helper/probe errors are separate; the latter do not
+instrument every transaction inside third-party drivers. Rates update roughly
+every second. Build identity and actual ages are more useful than requested Hz
+when comparing runs. Camera JPEG responses and each MJPEG part now include
+`X-Board-Boot-Id`, `X-Board-Uptime-Ms`, and the driver's
+`X-Frame-Timestamp-Us`. These are board-side times, not wall-clock UTC. A new
+boot ID marks a new recording timebase.
+
+Camera controls/ranges: `quality=0..63`; `brightness`, `contrast`, and
+`saturation=-2..2`; `whitebal`, `exposure`, `gain`, and `mirror=0|1`;
+`agcGain=0..30`; `aecValue=0..1200`. `whitebal`, `exposure`, and `gain` toggle
+the sensor's automatic algorithms. Disable auto gain/exposure before setting
+manual gain/exposure. Capture is serialized with changes; queued frames are
+discarded. Resolution still uses `/camera/resolution?size=QVGA|VGA|SVGA|XGA|HD`.
+
+Manual IMU keys are `accelBiasX/Y/Z` (g, -2..2), `accelScaleX/Y/Z` (0.5..2),
+and `gyroBiasX/Y/Z` (degrees/s, -100..100). Acceleration is `(rawG-bias)*scale`;
+gyro correction is subtracted before stationary residual-bias calibration.
+`axisX/Y/Z` selects output axes from signed chip axes `1,2,3`; mappings must be
+unique, nonzero, and right-handed. Example: `axisX=2&axisY=-1&axisZ=3`.
+Converted vectors and orientation use this frame; raw arrays remain chip-frame
+counts. `/imu` labels these `frame=configured` and `rawFrame=chip`. Do not infer
+mounting axes from an unverified physical orientation. A Scout calibration
+wizard and ToF reference-distance comparisons remain host-side work; this API
+does not invent ToF offsets or cover-glass calibration. Save explicitly when
+satisfied. Automatic stationary calibration and zero pose restart after boot;
+manual corrections/mapping are what the settings record retains.
+
+Event thresholds: `proximityMm=50..4000`, `tiltDeg=5..85`, `impactG=1.2..3.5`,
+`motionDps=1..200`. Defaults are 300 mm, 30 degrees, 2 g, and 10 degrees/s.
+Proximity uses fresh valid LR full-field readings or the nearest valid wide
+zone; tilt is relative to the boot/zero gravity reference. Impact is acceleration
+magnitude; motion is gyro magnitude after bias correction. Events are sampled
+at most every 20 ms and use hysteresis. They are diagnostic indicators, not
+certified obstacle/impact detection. Missing/stale/disabled readings never emit
+a clear-path event. Inspect `/system` for availability. Check `bootId` and `gap`
+when resuming from a cursor: the ring is finite and resets on reboot. This does
+not expose the VL53L5CX's native motion-indicator or multiple targets per zone;
+those remain a separate possible extension.
+
+### OTA setup and limits
+
+The template now uses `PartitionScheme=min_spiffs`: two 1,966,080-byte app slots
+in the standard 4 MB layout. Install the new partition table with a **wired
+flash first**. An old saved `fqbnOverride` with `no_ota` still builds, but cannot
+receive OTA; `/system` reports actual partition availability. Do not attempt to
+replace the partition table through the app upload endpoint.
+
+Set the template secret `ota.password` to at least 12 characters when building
+(for example through Helm's existing `--var` mechanism). Blank/short passwords
+disable OTA and rollback. Authentication uses HTTP Basic user `scout`. Credentials
+and images travel over the local HTTP connection. Upload only the matching
+Sensor Board v1.3 **application `.bin`**, never a merged flash image, bootloader,
+partition binary, or another board's firmware:
+
+```bash
+curl --user scout --form 'firmware=@sensor-board-app.bin' http://BOARD:82/ota
+```
+
+Curl prompts for the configured password. The handler refuses active Uno drive,
+speaker streams, and held microphone investigations. It holds the existing
+camera/speaker locks while writing, verifies the app image through ESP-IDF, and
+selects the new boot partition only after successful upload completion. Invalid,
+wrong-chip, oversized, interrupted, or unauthenticated uploads must not select a
+new boot image. Uploads do not migrate settings schemas automatically.
+
+Manual rollback is offered only when ESP-IDF finds a previous bootable image.
+**Automatic failed-boot rollback is not enabled by this Arduino template**;
+`/system` reports that explicitly. A physically unresponsive board still needs
+wired recovery. OTA and rollback have been compiled, not exercised on this board.
+
+### Optional secondary Wi-Fi
+
+The flashing form can include `wifi.secondarySsid` and `wifi.secondaryPassword`.
+Both default to blank; a blank secondary SSID disables fallback. An empty
+secondary password supports an open backup network. Credentials are C++-escaped
+when rendered and are not printed by the reconnect controller.
+
+All three ESP32 templates try primary Wi-Fi first. After a 30-second failed
+attempt they try secondary, then alternate at 30-second intervals until connected.
+After an established connection is lost, the main loop tries the other profile.
+A working secondary connection stays connected; the firmware does not interrupt
+it to probe primary. Reboot prefers primary again.
+
+Primary retains its configured static/DHCP settings. Secondary always uses DHCP
+so a static address from a different subnet is not reused. Its address can change;
+use mDNS where configured or update Scout's endpoint explicitly as needed. This
+does not automatically rewrite the vehicle registry. The drive template stops
+motors when the Wi-Fi link is down; collision guards and deadman remain enabled.
+Updated firmware with the backup credentials must be uploaded before this takes
+effect. No runtime Wi-Fi credential editing endpoint is added.
+
+### SR emitter off verification (bench-13)
+
+The SR Off button now performs an explicit, bounded MCU stop transaction and
+checks its acknowledgement, then requests ULD sleep and reads back the power
+mode. Only successful verification commits `enabled=false`. On wakes the sensor,
+verifies wakeup, and restarts ranging with its retained profile. Repeated Off
+requests verify the hardware is asleep. Reinitializing while Off also leaves it
+in verified sleep.
+
+This replaces reliance on Adafruit VL53L5CX 1.0.1's `stopRanging()` alone: its
+initial auto-stop flag is zero, while its explicit MCU-stop branch is conditional
+on that flag being one. Thus a successful return could leave the IR emitter
+active even when Scout stopped displaying samples. The local helper follows the
+[ST ULD stop transaction sequence](https://github.com/STMicroelectronics/stm32-vl53l5cx/blob/main/modules/vl53l5cx_api.c)
+with explicit acknowledgement and timeout checks; it does not edit a global
+Arduino library or repurpose board pins. See `VL53L5CX-LICENSE.md` for the ST
+sequence's license. Profile transitions also use the verified stop helper.
+
+Scout allows up to 15 seconds for an SR enable/disable acknowledgement, covering
+the bounded stop and sleep/wakeup checks. Errors leave the requested state
+unconfirmed rather than claiming Off. The fix requires updated sensor-board
+firmware; compilation and mocked register-transaction tests do not replace a
+physical emitter check after upload.

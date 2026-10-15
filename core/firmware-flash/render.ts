@@ -122,6 +122,16 @@ function substitute(
   // Derive .octets variants from string values that look like IPv4 addresses.
   const derived: Record<string, string> = {};
   for (const [k, v] of Object.entries(resolved)) {
+    // Explicit C++ string-content variant for new secret/string placeholders.
+    // Leave existing raw substitutions unchanged for older templates.
+    if (typeof v === "string") {
+      derived[`${k}.cpp`] = Array.from(v, (character) => {
+        if (character === "\\") return "\\\\";
+        if (character === '"') return '\\"';
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127 ? "\\" + code.toString(8).padStart(3, "0") : character;
+      }).join("");
+    }
     if (typeof v === "string" && /^\d{1,3}(\.\d{1,3}){3}$/.test(v)) {
       derived[`${k}.octets`] = v.split(".").join(", ");
     }

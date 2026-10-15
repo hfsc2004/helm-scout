@@ -1,8 +1,10 @@
+import { revealDetails } from "./revealDetails";
 // SPDX-License-Identifier: Apache-2.0
 /** Remember each Drive section independently for each vehicle. */
 export function persistentDetails(node: HTMLDetailsElement, options: { vehicleId: string | null; section: string; defaultOpen?: boolean }) {
   let storageKey = "";
   function restore(next: typeof options): void {
+    reveal.reset();
     storageKey = `psf-helm:drive-section:${next.vehicleId ?? "none"}:${next.section}`;
     let saved: string | null = null;
     try { saved = localStorage.getItem(storageKey); }
@@ -13,6 +15,7 @@ export function persistentDetails(node: HTMLDetailsElement, options: { vehicleId
     try { localStorage.setItem(storageKey, String(node.open)); }
     catch { /* Keep native expand/collapse working without persistence. */ }
   }
+  const reveal = revealDetails(node);
   restore(options);
   node.addEventListener("toggle", save);
   return {
@@ -20,6 +23,6 @@ export function persistentDetails(node: HTMLDetailsElement, options: { vehicleId
       const nextKey = `psf-helm:drive-section:${next.vehicleId ?? "none"}:${next.section}`;
       if (nextKey !== storageKey) restore(next);
     },
-    destroy() { node.removeEventListener("toggle", save); },
+    destroy() { reveal.destroy(); node.removeEventListener("toggle", save); },
   };
 }

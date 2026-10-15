@@ -440,14 +440,65 @@ ESP32 camera servers that can handle only one camera client at a time.
 
 The whole pipeline is local: the camera lives on your LAN, the cache lives in your Helm Scout process, the bridge between processes is loopback-only (`127.0.0.1`, bearer-token auth, descriptor in `<dataDir>/control-plane.json` mode `0600`). Nothing transits the cloud — including the bytes a frontier model sees when it asks for a snapshot.
 
+## Optional secondary Wi-Fi
+
+In the board flashing form, enable **Use secondary Wi-Fi as a fallback** to
+enter a backup SSID and password. Leave it disabled for one-network behavior.
+The updated drive, video, and v1.3 sensor-board templates prefer primary at boot,
+try secondary after a 30-second connection timeout, and retry the other network
+on a lost link. They retain a working secondary link until disconnect/reboot.
+Secondary uses DHCP, so its address may differ from the primary static address;
+Scout does not automatically rewrite registered endpoints. Flash the updated
+firmware with those credentials to activate fallback. CLI template variable names
+are `wifi.secondarySsid` and `wifi.secondaryPassword`.
+
 ## Drive window preferences
+
+Numeric camera, IMU calibration, and event threshold fields accept **Enter** to
+apply their settings, with the same validation as the Apply button.
 
 The right-hand controls expand and collapse independently. SR Front ToF is
 first and expanded on first use; the other sections start collapsed. Helm Scout
-remembers every section's state per vehicle across restarts. The Camera section
-has a **Flip horizontally** toggle, also saved per vehicle; it mirrors the desktop
-preview without changing the camera firmware. The NumPad STOP button remains
+remembers every section's state per vehicle across restarts. Expanding a section
+near the rail edge scrolls it into view; collapsing it restores the earlier view
+when you have not scrolled elsewhere. Tall sections keep their heading visible.
+Restoring saved expansion preferences never scrolls the rail. The Camera section
+has a **Flip display horizontally** toggle, also saved per vehicle; it mirrors the desktop
+preview without changing the camera firmware. **CW** and **CCW** rotate the
+preview in 90-degree steps; **Reset** restores 0°. Rotation is also saved per
+vehicle, and quarter-turns fit the full image within the camera area. The NumPad STOP button remains
 accessible when the driving controls are collapsed.
+
+For Sensor Board v1.3 with the bench firmware, the Drive sections also include:
+
+- **SR Front / LR Front / LR Rear ToF:** individual measurement on/off and
+  sensor reinitialization. SR retains its profile/rate selectors; each LR gets
+  an automatic/short/medium/long full-field mode selector.
+- **IMU:** measurement on/off, reinitialization, stationary pose zeroing, and
+  manual bias/scale and mounting-axis calibration. Calibration stays volatile
+  until explicitly saved.
+- **Camera:** live resolution and image adjustments, including auto/manual
+  exposure and gain. Sensor mirror changes the camera output; the separate
+  display flip affects only Scout's preview.
+- **Sensor events:** editable proximity/tilt/impact/motion thresholds and recent
+  event transitions. Polling runs while this section is open; reboot and expired
+  history are handled explicitly.
+- **Board status:** RAM/PSRAM, reset reason, measured rates, sensor errors,
+  self-tests, saved boot defaults, reboot, and optional wireless firmware upload
+  or manual rollback. OTA stays disabled unless the board reports an OTA slot
+  and a configured password. File selection rejects non-S3 application images;
+  selecting a file does not upload it. Upload/rollback require a separate action,
+  and Scout never saves the OTA password.
+- **Board status → Sensor recording:** bounded recordings of cached samples,
+  wide frames, and optional camera stills. Stop and export JSON before leaving
+  Drive; saved sessions can be opened and scrubbed locally without contacting a
+  board. Sensor acquisition times and camera-cache times remain separate.
+
+Board operations pause competing measurement polls and block new keyboard drive,
+audio, or light-show starts. Stop controls remain available. Unsupported firmware
+reports an upgrade message; controls do not simulate successful changes. Restart
+Scout after a software update so the new native controls are loaded. The board
+needs no further flash to expose these controls if it already runs `bench-12`.
 
 ## Vehicles tab
 

@@ -10,6 +10,7 @@
   import SpeedSlider from "../components/SpeedSlider.svelte";
   import StateReadouts from "../components/StateReadouts.svelte";
   import IntentBar from "../components/IntentBar.svelte";
+  import BoardCameraControls from "../components/BoardCameraControls.svelte";
   import CameraFeed from "../components/CameraFeed.svelte";
   import AudioFeed from "../components/AudioFeed.svelte";
   import ActivityLog from "../components/ActivityLog.svelte";
@@ -20,6 +21,7 @@
   import { hasDriveControl } from "@shared/vehicle-contract";
 
   let cameraFlipped = false;
+  let cameraRotation = 0;
   let numpad: Numpad | null = null;
   function loadCameraFlip(vehicleId: string | null): boolean {
     try { return vehicleId !== null && localStorage.getItem(`psf-helm:camera-flip:${vehicleId}`) === "true"; }
@@ -30,7 +32,20 @@
     try { localStorage.setItem(`psf-helm:camera-flip:${$fleet.selectedId}`, String(cameraFlipped)); }
     catch { /* Keep the toggle usable when storage is unavailable. */ }
   }
+  function loadCameraRotation(vehicleId: string | null): number {
+    try {
+      const value = Number(vehicleId ? localStorage.getItem(`psf-helm:camera-rotation:${vehicleId}`) : 0);
+      return [0, 90, 180, 270].includes(value) ? value : 0;
+    } catch { return 0; }
+  }
+  function rotateCamera(delta: number): void {
+    cameraRotation = (cameraRotation + delta + 360) % 360;
+    if (!$fleet.selectedId) return;
+    try { localStorage.setItem(`psf-helm:camera-rotation:${$fleet.selectedId}`, String(cameraRotation)); }
+    catch { /* Keep rotation usable without storage. */ }
+  }
   $: cameraFlipped = loadCameraFlip($fleet.selectedId);
+  $: cameraRotation = loadCameraRotation($fleet.selectedId);
 
   $: selectedVehicle = $fleet.vehicles.find((v) => v.id === $fleet.selectedId) ?? null;
   $: canDrive = selectedVehicle ? hasDriveControl(selectedVehicle) : false;
@@ -51,7 +66,7 @@
 <div class="layout">
   <div class="stage">
     <div class="camera">
-      <CameraFeed flipped={cameraFlipped} />
+      <CameraFeed flipped={cameraFlipped} rotation={cameraRotation} />
     </div>
     <AudioFeed />
     {#if canDrive}<IntentBar />{/if}
@@ -89,7 +104,15 @@
     {/if}
     {#if selectedVehicle?.camera}
       <details use:persistentDetails={{ vehicleId: $fleet.selectedId, section: "camera" }}><summary>Camera</summary>
-        <section><label class="camera-toggle"><input type="checkbox" bind:checked={cameraFlipped} on:change={saveCameraFlip} /> Flip horizontally</label></section>
+        <section><label class="camera-toggle"><input type="checkbox" bind:checked={cameraFlipped} on:change={saveCameraFlip} /> Flip display horizontally</label>
+          <div class="camera-rotation" aria-label="Camera display rotation">
+            <button on:click={() => rotateCamera(-90)} aria-label="Rotate camera display counter-clockwise 90 degrees">↶ CCW</button>
+            <span>{cameraRotation}°</span>
+            <button on:click={() => rotateCamera(90)} aria-label="Rotate camera display clockwise 90 degrees">CW ↷</button>
+            <button on:click={() => rotateCamera(-cameraRotation)} disabled={cameraRotation === 0}>Reset</button>
+          </div>
+          {#if selectedVehicle.sensorBoardRevision === "1.3"}{#key selectedVehicle.id}<BoardCameraControls vehicleId={selectedVehicle.id} />{/key}{/if}
+        </section>
       </details>
     {/if}
     {#if selectedVehicle?.sensorBoardRevision === "1.3"}
@@ -129,6 +152,9 @@
   summary { padding: 0.85rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
   summary:hover { background: var(--surface-2, #1c232c); }
   summary:focus-visible { outline: 2px solid var(--accent, #58a6ff); outline-offset: -2px; }
+  .camera-rotation { display: flex; align-items: center; gap: .5rem; margin-top: .65rem; font-size: .8rem; }
+  .camera-rotation button { padding: .35rem .5rem; cursor: pointer; }
+  .camera-rotation span { min-width: 2.5rem; text-align: center; }
   .camera-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
   .rail {
     display: flex;
