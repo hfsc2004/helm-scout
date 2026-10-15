@@ -4,6 +4,11 @@
 // Uno replies and working microphone DATA remain unresolved.
 
 #include <WiFi.h>
+#include "wifi_failover.h"
+#include <Preferences.h>
+#include <esp_ota_ops.h>
+#include <esp_system.h>
+#include "bench_config.h"
 #include <WebServer.h>
 #include <HardwareSerial.h>
 #include <Wire.h>
@@ -32,6 +37,7 @@
 #include "src/vl53l1_class.h"
 #include "narrow_tof_sample.h"
 #include <Adafruit_VL53L5CX.h>
+#include "wide_tof_control.h"
 #include <math.h>
 #include "startup_chime.h"
 
@@ -52,8 +58,8 @@
 #error "Sensor Board v1.3 requires EventsCore=0 for network events"
 #endif
 
-static const char *WIFI_SSID = "{{wifi.ssid}}";
-static const char *WIFI_PASSWORD = "{{wifi.password}}";
+static const char *WIFI_SSID = "{{wifi.ssid.cpp}}";
+static const char *WIFI_PASSWORD = "{{wifi.password.cpp}}";
 static const char *MDNS_NAME = "{{mdns.name}}";
 static const bool USE_STATIC_IP = {{wifi.useStatic}};
 static const IPAddress STATIC_IP({{wifi.staticIp.octets}});
@@ -61,6 +67,11 @@ static const int STATIC_CIDR = {{wifi.staticCidr}};
 static const char *FRAME_SIZE = "{{camera.frameSize}}";
 static const int JPEG_QUALITY = {{camera.jpegQuality}};
 static const bool CAMERA_MIRROR_DEFAULT = {{camera.hmirror}};
+const char *WIFI_SECONDARY_SSID = "{{wifi.secondarySsid.cpp}}";
+const char *WIFI_SECONDARY_PASSWORD = "{{wifi.secondaryPassword.cpp}}";
+ScoutWifiFailover wifiFailover;
+
+static const char *OTA_PASSWORD = "{{ota.password.cpp}}";
 
 static constexpr uint8_t I2C_SDA = 2;
 static constexpr uint8_t I2C_SCL = 1;
@@ -120,6 +131,7 @@ static constexpr int CAM_VSYNC = 6, CAM_HREF = 7, CAM_PCLK = 13;
 WebServer cameraServer(CAMERA_PORT);
 WebServer diagnosticServer(DIAGNOSTIC_PORT);
 WebServer speakerServer(SPEAKER_PORT);
+SemaphoreHandle_t cameraMutex = nullptr;
 SemaphoreHandle_t boardIoMutex = nullptr;
 SemaphoreHandle_t speakerControlMutex = nullptr;
 bool speakerHttpReady = false;
@@ -133,6 +145,8 @@ bool frontTofReady = false;
 bool rearTofReady = false;
 bool wideTofReady = false;
 bool imuReady = false;
+bool frontTofEnabled = true, rearTofEnabled = true, wideTofEnabled = true, imuEnabled = true;
+bool frontTofInitialized = false, rearTofInitialized = false, wideTofInitialized = false;
 bool microphonesReady = false;
 String micGpio14PostEnable = "null";
 uint32_t micGpio14PostEnableMs = 0;
@@ -238,13 +252,6 @@ bool wideHasFrame = false;
 uint32_t wideCapturedAt = 0;
 uint32_t wideLastPollAt = 0;
 
-struct ImuSample {
-  int16_t temperature = 0;
-  int16_t accel[3] = {};
-  int16_t gyro[3] = {};
-  uint32_t sampledAt = 0;
-  bool valid = false;
-};
 ImuSample imuSample;
 uint32_t imuLastPollAt = 0;
 uint16_t imuCalibrationCount = 0;
@@ -256,23 +263,47 @@ float imuOrientation[4] = {1.0f, 0.0f, 0.0f, 0.0f}; // body-to-boot-frame quater
 bool imuOrientationReady = false;
 uint32_t imuIntegrationAt = 0;
 
+BenchConfig benchConfig;
+uint32_t sensorFrames[4] = {}, sensorErrors[4] = {};
+uint32_t i2cErrors = 0;
+volatile uint32_t cameraFrames = 0;
+uint32_t benchBootId = 0;
+uint32_t sensorRateBaseline[4] = {}, rateSampledAt = 0;
+float sensorHz[4] = {};
+float calibratedAccel[3] = {}, calibratedGyro[3] = {};
+bool savedSettingsLoaded = false, savedSettingsApplyOk = true;
+
+void calibratedVectors(const ImuSample &sample, float accel[3], float gyro[3]) {
+  float chipAccel[3], chipGyro[3];
+  for (int i = 0; i < 3; ++i) {
+    chipAccel[i] = (sample.accel[i] / 16384.0f - benchConfig.accelBias[i]) * benchConfig.accelScale[i];
+    chipGyro[i] = sample.gyro[i] / 131.0f - benchConfig.gyroCorrection[i];
+  }
+  benchMap(benchConfig.axes, chipAccel, accel);
+  benchMap(benchConfig.axes, chipGyro, gyro);
+}
+
 bool i2cPresent(uint8_t address) {
   Wire.beginTransmission(address);
-  return Wire.endTransmission() == 0;
+  const bool ok = Wire.endTransmission() == 0;
+  if (!ok) ++i2cErrors;
+  return ok;
 }
 
 bool writeExpander(uint8_t reg, uint8_t value) {
   Wire.beginTransmission(TCA9534_ADDRESS);
   Wire.write(reg);
   Wire.write(value);
-  return Wire.endTransmission() == 0;
+  const bool ok = Wire.endTransmission() == 0;
+  if (!ok) ++i2cErrors;
+  return ok;
 }
 
 bool readRegister8(uint8_t address, uint8_t reg, uint8_t *value) {
   Wire.beginTransmission(address);
   Wire.write(reg);
-  if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom(address, static_cast<uint8_t>(1)) != 1) return false;
+  if (Wire.endTransmission(false) != 0) { ++i2cErrors; return false; }
+  if (Wire.requestFrom(address, static_cast<uint8_t>(1)) != 1) { ++i2cErrors; return false; }
   *value = Wire.read();
   return true;
 }
@@ -291,14 +322,16 @@ bool writeRegister8(uint8_t address, uint8_t reg, uint8_t value) {
   Wire.beginTransmission(address);
   Wire.write(reg);
   Wire.write(value);
-  return Wire.endTransmission() == 0;
+  const bool ok = Wire.endTransmission() == 0;
+  if (!ok) ++i2cErrors;
+  return ok;
 }
 
 bool readRegisters(uint8_t address, uint8_t reg, uint8_t *values, size_t count) {
   Wire.beginTransmission(address);
   Wire.write(reg);
-  if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom(address, count) != count) return false;
+  if (Wire.endTransmission(false) != 0) { ++i2cErrors; return false; }
+  if (Wire.requestFrom(address, count) != count) { ++i2cErrors; return false; }
   for (size_t i = 0; i < count; ++i) values[i] = Wire.read();
   return true;
 }
@@ -883,7 +916,8 @@ bool initCamera() {
   c.pin_reset = -1;
   c.xclk_freq_hz = 20000000;
   c.pixel_format = PIXFORMAT_JPEG;
-  c.frame_size = selectedFrameSize();
+  // Reserve buffers for the largest runtime choice, then select the boot size.
+  c.frame_size = FRAMESIZE_HD;
   c.jpeg_quality = constrain(JPEG_QUALITY, 0, 63);
   c.fb_count = psramFound() ? 2 : 1;
   c.fb_location = psramFound() ? CAMERA_FB_IN_PSRAM : CAMERA_FB_IN_DRAM;
@@ -894,6 +928,10 @@ bool initCamera() {
     return false;
   }
   sensor_t *sensor = esp_camera_sensor_get();
+  if (!sensor || sensor->set_framesize(sensor, selectedFrameSize()) != 0) {
+    esp_camera_deinit();
+    return false;
+  }
   if (sensor && sensor->set_hmirror &&
       sensor->set_hmirror(sensor, CAMERA_MIRROR_DEFAULT ? 1 : 0) == 0) {
     cameraMirrored = CAMERA_MIRROR_DEFAULT;
@@ -910,22 +948,20 @@ IPAddress subnetMask(int cidr) {
                    (bits >> 8) & 255, bits & 255);
 }
 
-void connectWifi() {
-  WiFi.mode(WIFI_STA);
-  if (USE_STATIC_IP) {
+void configureWifiAddress(bool secondary) {
+  if (!secondary && USE_STATIC_IP) {
     const IPAddress gateway(STATIC_IP[0], STATIC_IP[1], STATIC_IP[2], 1);
     if (!WiFi.config(STATIC_IP, gateway, subnetMask(STATIC_CIDR))) {
       Serial.println("Static IP config failed; trying DHCP");
     }
+  } else {
+    WiFi.config(IPAddress(0,0,0,0), IPAddress(0,0,0,0), IPAddress(0,0,0,0));
   }
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  const uint32_t start = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - start < 30000) delay(250);
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi connect timed out; rebooting");
-    delay(1000);
-    ESP.restart();
-  }
+}
+
+void connectWifi() {
+  wifiFailover.begin(WIFI_SSID, WIFI_PASSWORD, WIFI_SECONDARY_SSID, WIFI_SECONDARY_PASSWORD, configureWifiAddress);
+  while (WiFi.status() != WL_CONNECTED) { wifiFailover.poll(); delay(50); }
   Serial.printf("WiFi connected: %s\n", WiFi.localIP().toString().c_str());
   if (MDNS.begin(MDNS_NAME)) {
     MDNS.addService("http", "tcp", CAMERA_PORT);
@@ -937,7 +973,7 @@ void connectWifi() {
 
 void sendHealth() {
   String body = "{\"ok\":true,\"board\":\"psf-sensor-board\",\"revision\":\"1.3\"";
-  body += ",\"firmware\":\"bring-up-11\",\"uptimeMs\":" + String(millis() - bootMs);
+  body += ",\"firmware\":\"bench-13\",\"uptimeMs\":" + String(millis() - bootMs);
   body += ",\"cameraReady\":" + String(cameraReady ? "true" : "false");
   body += ",\"cameraMirrored\":" + String(cameraMirrored ? "true" : "false");
   body += ",\"expanderReady\":" + String(expanderReady ? "true" : "false");
@@ -966,15 +1002,20 @@ void sendCapture() {
     cameraServer.send(503, "text/plain", "camera unavailable");
     return;
   }
+  xSemaphoreTake(cameraMutex, portMAX_DELAY);
   camera_fb_t *fb = esp_camera_fb_get();
   if (!fb) {
+    xSemaphoreGive(cameraMutex);
     cameraServer.send(500, "text/plain", "capture failed");
     return;
   }
   WiFiClient client = cameraServer.client();
-  client.printf("HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n", fb->len);
+  client.printf("HTTP/1.1 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\nX-Board-Boot-Id: %u\r\nX-Board-Uptime-Ms: %u\r\nX-Frame-Timestamp-Us: %llu\r\n\r\n", fb->len, benchBootId, millis(),
+    static_cast<unsigned long long>(fb->timestamp.tv_sec) * 1000000ULL + fb->timestamp.tv_usec);
+  ++cameraFrames;
   client.write(fb->buf, fb->len);
   esp_camera_fb_return(fb);
+  xSemaphoreGive(cameraMutex);
 }
 
 void sendStream() {
@@ -985,12 +1026,19 @@ void sendStream() {
   WiFiClient client = cameraServer.client();
   client.print("HTTP/1.1 200 OK\r\nContent-Type: multipart/x-mixed-replace; boundary=psfhelm\r\n\r\n");
   while (client.connected()) {
+    xSemaphoreTake(cameraMutex, portMAX_DELAY);
     camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) break;
-    client.printf("--psfhelm\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n", fb->len);
+    if (!fb) {
+      xSemaphoreGive(cameraMutex);
+      break;
+    }
+    client.printf("--psfhelm\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\nX-Board-Boot-Id: %u\r\nX-Board-Uptime-Ms: %u\r\nX-Frame-Timestamp-Us: %llu\r\n\r\n", fb->len, benchBootId, millis(),
+      static_cast<unsigned long long>(fb->timestamp.tv_sec) * 1000000ULL + fb->timestamp.tv_usec);
     client.write(fb->buf, fb->len);
     client.print("\r\n");
+    ++cameraFrames;
     esp_camera_fb_return(fb);
+    xSemaphoreGive(cameraMutex);
     delay(30);
   }
 }
@@ -1075,6 +1123,50 @@ void sendDiagnostics() {
   body += ",\"imuAddressResponds\":" + String((i2cPresent(0x68) || i2cPresent(0x69)) ? "true" : "false");
   body += ",\"distanceMm\":null,\"imuSample\":null}";
   diagnosticServer.send(200, "application/json", body);
+}
+
+// Diagnostic server remains reachable while the camera server streams.
+void cameraResolution() {
+  const char *names[] = {"QVGA", "VGA", "SVGA", "XGA", "HD"};
+  const framesize_t sizes[] = {FRAMESIZE_QVGA, FRAMESIZE_VGA, FRAMESIZE_SVGA,
+                              FRAMESIZE_XGA, FRAMESIZE_HD};
+  int requested = -1;
+  if (diagnosticServer.method() == HTTP_POST) {
+    const String name = diagnosticServer.arg("size");
+    for (int i = 0; i < 5; ++i) if (name == names[i]) requested = i;
+    if (requested < 0) {
+      diagnosticServer.send(400, "application/json",
+        "{\"ok\":false,\"error\":\"size must be QVGA, VGA, SVGA, XGA, or HD\"}");
+      return;
+    }
+  }
+  if (!cameraReady || !cameraMutex) {
+    diagnosticServer.send(503, "application/json", "{\"ok\":false,\"error\":\"camera unavailable\"}");
+    return;
+  }
+  if (xSemaphoreTake(cameraMutex, pdMS_TO_TICKS(2000)) != pdTRUE) {
+    diagnosticServer.send(503, "application/json", "{\"ok\":false,\"error\":\"camera busy; resolution unchanged\"}");
+    return;
+  }
+  sensor_t *sensor = esp_camera_sensor_get();
+  bool ok = sensor && (requested < 0 ||
+    (sensor->set_framesize && sensor->set_framesize(sensor, sizes[requested]) == 0));
+  if (ok && requested >= 0) {
+    // Remove queued frames from the previous resolution before resuming delivery.
+    for (int i = 0; i < 2; ++i) {
+      camera_fb_t *fb = esp_camera_fb_get();
+      if (fb) esp_camera_fb_return(fb);
+    }
+  }
+  const char *active = "unknown";
+  if (sensor) for (int i = 0; i < 5; ++i)
+    if (sensor->status.framesize == sizes[i]) active = names[i];
+  xSemaphoreGive(cameraMutex);
+  String body = "{\"ok\":" + String(ok ? "true" : "false") +
+    ",\"size\":\"" + String(active) + "\",\"supported\":[\"QVGA\",\"VGA\",\"SVGA\",\"XGA\",\"HD\"]";
+  if (!ok) body += ",\"error\":\"camera rejected resolution\"";
+  body += "}";
+  diagnosticServer.send(ok ? 200 : 503, "application/json", body);
 }
 
 void setCameraMirror() {
@@ -1195,6 +1287,7 @@ void pollNarrowTof(VL53L1 &sensor, bool ready, NarrowTofSample &sample,
     error = sensor.VL53L1_GetMultiRangingData(&results);
     if (error == VL53L1_ERROR_NONE) {
       sample.lastDataAt = millis();
+      ++sensorFrames[&sensor == &frontTof ? 0 : 1];
       if (sample.phaseFrames < 255) ++sample.phaseFrames;
       const uint8_t roi = sample.scanningQuadrants ? results.RoiNumber + 1 : 0;
       const bool warmed = sample.scanningQuadrants ? sample.phaseFrames > 4 :
@@ -1210,6 +1303,7 @@ void pollNarrowTof(VL53L1 &sensor, bool ready, NarrowTofSample &sample,
     if (error == VL53L1_ERROR_NONE) error = restart;
   }
   sample.driverError = error;
+  if (error != VL53L1_ERROR_NONE) ++sensorErrors[&sensor == &frontTof ? 0 : 1];
   const NarrowTofZone &full = sample.zones[0];
   const bool valid = full.hasFrame && full.rangeStatus == VL53L1_RANGESTATUS_RANGE_VALID &&
     full.distanceMm > 0 && millis() - full.sampledAt < 1500 && error == VL53L1_ERROR_NONE;
@@ -1388,7 +1482,7 @@ void setWideResolution() {
     return;
   }
   if (profile == wideProfile && hz == wideFrequencyHz) { sendWideResolution(); return; }
-  if (!wideTof.stopRanging()) {
+  if (!stopWideTofHardware(wideTof)) {
     diagnosticServer.send(503, "application/json", "{\"ok\":false,\"error\":\"could not stop wide ToF\"}");
     return;
   }
@@ -1403,7 +1497,7 @@ void setWideResolution() {
     wideTof.setRangingMode(autonomous ? VL53L5CX_RANGING_MODE_AUTONOMOUS : VL53L5CX_RANGING_MODE_CONTINUOUS) &&
     (!autonomous || wideTof.setIntegrationTime(5)) && wideTof.startRanging();
   if (!configured) {
-    wideTof.stopRanging();
+    stopWideTofHardware(wideTof);
     wideTofReady = wideTof.setResolution(wideResolution) &&
       wideTof.setRangingFrequency(wideFrequencyHz) &&
       wideTof.setTargetOrder(VL53L5CX_TARGET_ORDER_STRONGEST) &&
@@ -1482,16 +1576,16 @@ void pollImu() {
   // One burst reads temperature, acceleration and angular rate together.
   // Keep it in the main loop so diagnostic requests cannot race the I2C bus.
   uint8_t data[14];
-  if (!readRegisters(IMU_ADDRESS, 0x09, data, sizeof(data))) return;
+  if (!readRegisters(IMU_ADDRESS, 0x09, data, sizeof(data))) { ++sensorErrors[3]; return; }
   ImuSample next;
   next.temperature = signedImuWord(data);
   float accelG[3], gyroDps[3];
   for (uint8_t axis = 0; axis < 3; ++axis) {
     next.accel[axis] = signedImuWord(data + 2 + axis * 2);
     next.gyro[axis] = signedImuWord(data + 8 + axis * 2);
-    accelG[axis] = next.accel[axis] / 16384.0f;
-    gyroDps[axis] = next.gyro[axis] / 131.0f;
+
   }
+  calibratedVectors(next, accelG, gyroDps);
   // On this shared I2C bus an occasional burst repeats one byte across
   // several words (for example 0x1111 or 0xFFFF). Ignore it rather than
   // treating it as movement and restarting boot calibration.
@@ -1499,15 +1593,17 @@ void pollImu() {
   for (size_t offset = 0; offset < sizeof(data); offset += 2) {
     if (data[offset] == data[offset + 1]) ++repeatedByteWords;
   }
-  if (repeatedByteWords >= 3) return;
+  if (repeatedByteWords >= 3) { ++sensorErrors[3]; return; }
   const float accelNorm = sqrtf(accelG[0] * accelG[0] +
     accelG[1] * accelG[1] + accelG[2] * accelG[2]);
   // Occasional I2C bursts have returned -1 on several axes. Such a sample
   // implies almost zero gravity and must not shift the orientation estimate.
-  if (!isfinite(accelNorm) || accelNorm < 0.25f || accelNorm > 4.0f) return;
+  if (!isfinite(accelNorm) || accelNorm < 0.25f || accelNorm > 4.0f) { ++sensorErrors[3]; return; }
   next.sampledAt = now;
   next.valid = true;
   imuSample = next;
+  ++sensorFrames[3];
+  for (int i = 0; i < 3; ++i) { calibratedAccel[i] = accelG[i]; calibratedGyro[i] = gyroDps[i]; }
 
   if (!imuOrientationReady) {
     const float gyroNorm = sqrtf(gyroDps[0] * gyroDps[0] +
@@ -1583,13 +1679,17 @@ void pollImu() {
 }
 
 void sendImu() {
+  if (!imuEnabled) {
+    diagnosticServer.send(503, "application/json", "{\"ok\":false,\"enabled\":false,\"error\":\"IMU is off\"}");
+    return;
+  }
   if (!imuReady) initImu();
   if (!imuReady || !imuSample.valid || millis() - imuSample.sampledAt > 500) {
     diagnosticServer.send(503, "application/json", "{\"ok\":false,\"error\":\"IMU sample unavailable or stale\"}");
     return;
   }
   String body = "{\"ok\":true,\"sampledAtMs\":" + String(imuSample.sampledAt);
-  body += ",\"frame\":\"chip\",\"rawAccel\":[";
+  body += ",\"frame\":\"configured\",\"rawFrame\":\"chip\",\"rawAccel\":[";
   for (uint8_t axis = 0; axis < 3; ++axis) {
     if (axis) body += ',';
     body += String(imuSample.accel[axis]);
@@ -1597,7 +1697,7 @@ void sendImu() {
   body += "],\"accelG\":[";
   for (uint8_t axis = 0; axis < 3; ++axis) {
     if (axis) body += ',';
-    body += String(imuSample.accel[axis] / 16384.0f, 4);
+    body += String(calibratedAccel[axis], 4);
   }
   body += "],\"rawGyro\":[";
   for (uint8_t axis = 0; axis < 3; ++axis) {
@@ -1607,7 +1707,7 @@ void sendImu() {
   body += "],\"gyroDps\":[";
   for (uint8_t axis = 0; axis < 3; ++axis) {
     if (axis) body += ',';
-    body += String(imuSample.gyro[axis] / 131.0f, 4);
+    body += String(calibratedGyro[axis], 4);
   }
   body += "],\"rawTemperature\":" + String(imuSample.temperature);
   body += ",\"temperatureC\":" + String(25.0f + imuSample.temperature / 128.0f, 2);
@@ -1650,9 +1750,9 @@ void zeroImuOrientation() {
   float gravity[3];
   float gyroNormSquared = 0.0f;
   for (uint8_t axis = 0; axis < 3; ++axis) {
-    gravity[axis] = imuSample.accel[axis] / 16384.0f;
+    gravity[axis] = calibratedAccel[axis];
     gravityNorm += gravity[axis] * gravity[axis];
-    const float rate = imuSample.gyro[axis] / 131.0f - imuGyroBias[axis];
+    const float rate = calibratedGyro[axis] - imuGyroBias[axis];
     gyroNormSquared += rate * rate;
   }
   gravityNorm = sqrtf(gravityNorm);
@@ -3144,16 +3244,113 @@ void turnUnoRgbOff() {
     ",\"target\":\"Uno shield RGB LED only\",\"reply\":\"" + unoJsonEscape(reply) + "\"}");
 }
 
+// Executed on the diagnostic/main task while boardIoMutex owns the I2C bus.
+String sensorControlsJson(bool ok, const char *error = nullptr) {
+  String body = "{\"ok\":" + String(ok ? "true" : "false") + ",\"sensors\":{";
+  const char *names[] = {"front", "rear", "wide", "imu"};
+  const bool enabled[] = {frontTofEnabled, rearTofEnabled, wideTofEnabled, imuEnabled};
+  const bool ready[] = {frontTofReady, rearTofReady, wideTofReady, imuReady};
+  for (int i = 0; i < 4; ++i) {
+    if (i) body += ',';
+    body += "\"" + String(names[i]) + "\":{\"enabled\":" +
+      String(enabled[i] ? "true" : "false") + ",\"ready\":" +
+      String(ready[i] ? "true" : "false") + "}";
+  }
+  body += "}";
+  if (error) body += ",\"error\":\"" + String(error) + "\"";
+  return body + "}";
+}
+
+bool setSensorEnabled(const String &name, bool on) {
+  bool *enabled = name == "front" ? &frontTofEnabled : name == "rear" ? &rearTofEnabled :
+    name == "wide" ? &wideTofEnabled : &imuEnabled;
+  bool *ready = name == "front" ? &frontTofReady : name == "rear" ? &rearTofReady :
+    name == "wide" ? &wideTofReady : &imuReady;
+  if (*enabled == on && (!on || *ready)) {
+    if (name == "wide" && !on) return wideTofInitialized && setWideTofMeasurement(wideTof, false);
+    return true;
+  }
+  if ((name == "front" && !frontTofInitialized) ||
+      (name == "rear" && !rearTofInitialized) || (name == "wide" && !wideTofInitialized)) {
+    return false;
+  }
+  // Retain I2C addresses and loaded firmware: stop measurements, not shared rails.
+  bool ok = false;
+  if (name == "front" || name == "rear") {
+    VL53L1 &sensor = name == "front" ? frontTof : rearTof;
+    NarrowTofSample &sample = name == "front" ? frontTofSample : rearTofSample;
+    const VL53L1_DistanceModes mode = name == "front" ? frontTofMode : rearTofMode;
+    if (!on) ok = sensor.VL53L1_StopMeasurement() == VL53L1_ERROR_NONE;
+    else ok = configureNarrowPhase(sensor, sample, mode, false, false) == VL53L1_ERROR_NONE;
+    if (ok) {
+      sample = NarrowTofSample{};
+      sample.phaseStartedAt = sample.lastDataAt = millis();
+      if (name == "front") frontTofInvalidSince = 0;
+      else rearTofInvalidSince = 0;
+    }
+  } else if (name == "wide") {
+    ok = setWideTofMeasurement(wideTof, on);
+    if (ok) {
+      wideHasFrame = false;
+      wideResults = {};
+      wideFramePeriodMs = 0;
+      wideCapturedAt = 0;
+    }
+  } else {
+    if (on) {
+      imuReady = false;
+      initImu();
+      ok = imuReady;
+    } else {
+      uint8_t power = 0;
+      ok = writeRegister8(IMU_ADDRESS, 0x1F, 0x00) &&
+        readRegister8(IMU_ADDRESS, 0x1F, &power) && power == 0;
+    }
+    // Discard pre-toggle motion data even if a partial I2C operation failed.
+    imuSample = ImuSample{};
+    imuCalibrationCount = 0;
+    imuOrientationReady = false;
+    imuIntegrationAt = 0;
+    for (int i = 0; i < 3; ++i) imuGyroSum[i] = imuAccelSum[i] = imuGyroBias[i] = 0;
+    imuOrientation[0] = 1;
+    for (int i = 1; i < 4; ++i) imuOrientation[i] = 0;
+  }
+  if (ok) { *enabled = on; *ready = on; }
+  return ok;
+}
+
+void sensorControls() {
+  if (diagnosticServer.method() == HTTP_GET) {
+    diagnosticServer.send(200, "application/json", sensorControlsJson(true));
+    return;
+  }
+  const String name = diagnosticServer.arg("sensor"), value = diagnosticServer.arg("enabled");
+  const bool on = value == "1";
+  if ((name != "front" && name != "rear" && name != "wide" && name != "imu") ||
+      (value != "0" && value != "1")) {
+    diagnosticServer.send(400, "application/json",
+      sensorControlsJson(false, "use sensor=front|rear|wide|imu and enabled=0|1"));
+    return;
+  }
+  const bool ok = setSensorEnabled(name, on);
+  diagnosticServer.send(ok ? 200 : 503, "application/json",
+    sensorControlsJson(ok, ok ? nullptr : "sensor did not confirm the requested state; recovery or reboot may be needed"));
+}
+
+#include "bench_api.h"
+
 void setup() {
   Serial.begin(115200);
   bootMs = millis();
+  loadBenchSettings();
   Serial.println("PSF Sensor Board v1.3 bring-up firmware");
   Wire.begin(I2C_SDA, I2C_SCL);
   Wire.setClock(400000);
   muteSpeakerAmpEarly();
   ledsReady = rmtInit(LED_PIN, RMT_TX_MODE, RMT_MEM_NUM_BLOCKS_1, 10000000);
   if (ledsReady) showLeds(); // all off at boot
-  cameraReady = initCamera();
+  cameraMutex = xSemaphoreCreateMutex();
+  cameraReady = cameraMutex && initCamera();
   connectWifi();
   // The sensor rail can come up after the ESP32's I2C peripheral. Configure
   // the expander only after Wi-Fi setup has given the board time to settle.
@@ -3168,7 +3365,11 @@ void setup() {
   // Keep the camera reachable while the wide sensor loads its firmware over
   // I2C; this can take several seconds on the first initialization.
   initTofSensors();
+  frontTofInitialized = frontTofReady;
+  rearTofInitialized = rearTofReady;
+  wideTofInitialized = wideTofReady;
   initImu();
+  applyBenchSettings();
   initMicrophones();
   initSpeaker();
   boardIoMutex = xSemaphoreCreateMutex();
@@ -3187,6 +3388,10 @@ void setup() {
 
   diagnosticServer.on("/diagnostics", HTTP_GET, sendDiagnostics);
   diagnosticServer.on("/camera/mirror", HTTP_POST, setCameraMirror);
+  diagnosticServer.on("/camera/resolution", HTTP_GET, cameraResolution);
+  diagnosticServer.on("/camera/resolution", HTTP_POST, cameraResolution);
+  diagnosticServer.on("/sensors", HTTP_GET, sensorControls);
+  diagnosticServer.on("/sensors", HTTP_POST, sensorControls);
   diagnosticServer.on("/ranges", HTTP_GET, sendRanges);
   diagnosticServer.on("/tof-mode", HTTP_GET, sendTofMode);
   diagnosticServer.on("/tof-mode", HTTP_POST, setTofMode);
@@ -3248,6 +3453,14 @@ void setup() {
   diagnosticServer.on("/uno/drive-stop", HTTP_POST, stopUnoDrive);
   diagnosticServer.on("/uno/stop", HTTP_POST, stopUnoMotors);
   diagnosticServer.on("/uno/rgb-off", HTTP_POST, turnUnoRgbOff);
+  diagnosticServer.on("/reboot", HTTP_POST, [] {
+    unoDriveActive = false;
+    if (unoUartReady) unoSendWithoutReply(110);
+    diagnosticServer.send(200, "application/json", "{\"ok\":true,\"rebooting\":true}");
+    delay(200); // Allow the acknowledgement to reach Scout before Wi-Fi shuts down.
+    ESP.restart();
+  });
+  registerBenchApi();
   diagnosticServer.begin();
   Serial.printf("Camera port %u, diagnostics port %u\n", CAMERA_PORT, DIAGNOSTIC_PORT);
   // GPIO43/44 are also the ESP32-S3's default UART0 console pins. Release
@@ -3262,6 +3475,7 @@ void setup() {
 }
 
 void loop() {
+  wifiFailover.poll();
   // Arduino's loop task is pinned to core 1. Package sensor responses here
   // alongside acquisition; camera serving and TCP/IP run on core 0.
   if (boardIoMutex) xSemaphoreTake(boardIoMutex, portMAX_DELAY);
@@ -3277,14 +3491,18 @@ void loop() {
   pollImu();
   if (wideTofReady && millis() - wideLastPollAt >= 5) {
     wideLastPollAt = millis();
-    if (wideTof.isDataReady() && wideTof.getRangingData(&wideResults)) {
+    if (wideTof.isDataReady()) {
+      if (wideTof.getRangingData(&wideResults)) {
       const uint32_t capturedAt = millis();
       wideFramePeriodMs = wideHasFrame ? capturedAt - wideCapturedAt : 0;
       ++wideFrameSequence;
+      ++sensorFrames[2];
       wideHasFrame = true;
       wideCapturedAt = capturedAt;
+      } else ++sensorErrors[2];
     }
   }
+  pollBenchEvents();
   if (boardIoMutex) xSemaphoreGive(boardIoMutex);
   delay(2);
 }

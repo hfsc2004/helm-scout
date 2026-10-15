@@ -1,25 +1,28 @@
 {
   "id": "sensor-board-v1-3-esp32s3",
   "name": "GSN Robotics - PSF Sensor Board v1.3 (bring-up)",
-  "description": "ESP32-S3-CAM bring-up for PSF Sensor Board v1.3: camera, three ToF devices, IMU, experimental microphones, streamed speaker PCM, boot chime, and RGBW LEDs. No motor or collision-control changes.",
+  "description": "ESP32-S3 Sensor Board v1.3: camera, ToFs, IMU, audio/LED bring-up, bench diagnostics, saved settings, calibration, events, and optional authenticated OTA. No collision-control changes.",
   "target": "esp32",
-  "fqbn": "esp32:esp32:esp32s3:PSRAM=opi,PartitionScheme=no_ota,LoopCore=1,EventsCore=0",
+  "fqbn": "esp32:esp32:esp32s3:PSRAM=opi,PartitionScheme=min_spiffs,LoopCore=1,EventsCore=0",
   "core": "esp32:esp32",
   "libraries": [
-    { "name": "Adafruit VL53L5CX", "version": "1.0.1" }
+    {"name": "Adafruit VL53L5CX", "version": "1.0.1"}
   ],
-  "sketchFiles": ["startup_chime.h", "narrow_tof_sample.h"],
+  "sketchFiles": ["startup_chime.h", "narrow_tof_sample.h", "bench_config.h", "bench_api.h", "wifi_failover.h", "wide_tof_control.h"],
   "vehicleKind": "ground",
   "capabilities": ["camera.mjpeg"],
   "vars": [
-    { "key": "wifi.ssid", "type": "string", "required": true, "label": "WiFi SSID" },
-    { "key": "wifi.password", "type": "secret", "required": true, "label": "WiFi password" },
-    { "key": "mdns.name", "type": "string", "default": "psf-sensor", "label": "mDNS hostname" },
-    { "key": "wifi.useStatic", "type": "boolean", "default": false, "label": "Use a static IP?" },
-    { "key": "wifi.staticIp", "type": "string", "default": "192.168.1.51", "label": "Static IP" },
-    { "key": "wifi.staticCidr", "type": "number", "default": 24, "label": "Static CIDR prefix (0-32)" },
-    { "key": "camera.frameSize", "type": "string", "default": "VGA", "label": "Camera frame size (QVGA | VGA | SVGA | XGA | HD)" },
-    { "key": "camera.jpegQuality", "type": "number", "default": 12, "label": "JPEG quality (0..63, lower is better)" },
-    { "key": "camera.hmirror", "type": "boolean", "default": false, "label": "Mirror camera horizontally" }
+    { "key": "wifi.secondarySsid", "type": "string", "default": "", "label": "Secondary Wi-Fi SSID (optional)" },
+    { "key": "wifi.secondaryPassword", "type": "secret", "default": "", "label": "Secondary Wi-Fi password" },
+    {"key": "wifi.ssid", "type": "string", "required": true, "label": "WiFi SSID"},
+    {"key": "wifi.password", "type": "secret", "required": true, "label": "WiFi password"},
+    {"key": "mdns.name", "type": "string", "default": "psf-sensor", "label": "mDNS hostname"},
+    {"key": "wifi.useStatic", "type": "boolean", "default": false, "label": "Use a static IP?"},
+    {"key": "wifi.staticIp", "type": "string", "default": "192.168.1.51", "label": "Static IP"},
+    {"key": "wifi.staticCidr", "type": "number", "default": 24, "label": "Static CIDR prefix (0-32)"},
+    {"key": "camera.frameSize", "type": "string", "default": "VGA", "label": "Camera frame size (QVGA | VGA | SVGA | XGA | HD)"},
+    {"key": "camera.jpegQuality", "type": "number", "default": 12, "label": "JPEG quality (0..63, lower is better)"},
+    {"key": "camera.hmirror", "type": "boolean", "default": false, "label": "Mirror camera horizontally"},
+    {"key": "ota.password", "type": "secret", "default": "", "label": "OTA update password (12+ characters; blank disables uploads)"}
   ]
 }

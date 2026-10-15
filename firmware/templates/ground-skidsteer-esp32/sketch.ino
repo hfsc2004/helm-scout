@@ -5,15 +5,20 @@
 // - Telemetry endpoint for status
 
 #include <WiFi.h>
+#include "wifi_failover.h"
 #include <WebServer.h>
 #include <ESPmDNS.h>
 
 // ===== Wi-Fi =====
-const char* WIFI_SSID = "{{wifi.ssid}}";
-const char* WIFI_PASS = "{{wifi.password}}";
+const char* WIFI_SSID = "{{wifi.ssid.cpp}}";
+const char* WIFI_PASS = "{{wifi.password.cpp}}";
 
 // mDNS hostname — the robot will be reachable as "<MDNS_NAME>.local"
 // from any host on the same LAN, even if DHCP hands it a new IP.
+const char *WIFI_SECONDARY_SSID = "{{wifi.secondarySsid.cpp}}";
+const char *WIFI_SECONDARY_PASSWORD = "{{wifi.secondaryPassword.cpp}}";
+ScoutWifiFailover wifiFailover;
+
 const char* MDNS_NAME = "{{mdns.name}}";
 
 // Network mode:
@@ -386,9 +391,8 @@ void handleRoot() {
   server.send(200, "text/plain", help);
 }
 
-void connectWifi() {
-  WiFi.mode(WIFI_STA);
-  if (USE_STATIC_IP) {
+void configureWifiAddress(bool secondary) {
+  if (!secondary && USE_STATIC_IP) {
     IPAddress subnet = (STATIC_CIDR >= 0 && STATIC_CIDR <= 32) ? cidrToMask(STATIC_CIDR) : STATIC_SUBNET;
     IPAddress gateway = USE_STATIC_GATEWAY ? STATIC_GATEWAY : deriveGatewayFromIp(STATIC_IP);
     const bool configured = WiFi.config(STATIC_IP, gateway, subnet, STATIC_DNS1, STATIC_DNS2);
@@ -402,31 +406,18 @@ void connectWifi() {
       Serial.print("Static Gateway: ");
       Serial.println(gateway);
     }
+  } else {
+    WiFi.config(IPAddress(0,0,0,0), IPAddress(0,0,0,0), IPAddress(0,0,0,0));
   }
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+}
 
-  Serial.print("Connecting Wi-Fi");
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(400);
-    Serial.print(".");
-    if ((millis() - start) > WIFI_CONNECT_TIMEOUT_MS) {
-      Serial.println("\\nWi-Fi timeout, retrying...");
-      WiFi.disconnect(true);
-      delay(WIFI_RETRY_DELAY_MS);
-      if (USE_STATIC_IP) {
-        IPAddress subnet = (STATIC_CIDR >= 0 && STATIC_CIDR <= 32) ? cidrToMask(STATIC_CIDR) : STATIC_SUBNET;
-        IPAddress gateway = USE_STATIC_GATEWAY ? STATIC_GATEWAY : deriveGatewayFromIp(STATIC_IP);
-        WiFi.config(STATIC_IP, gateway, subnet, STATIC_DNS1, STATIC_DNS2);
-      }
-      WiFi.begin(WIFI_SSID, WIFI_PASS);
-      start = millis();
-    }
-  }
+void connectWifi() {
+  wifiFailover.begin(WIFI_SSID, WIFI_PASS, WIFI_SECONDARY_SSID, WIFI_SECONDARY_PASSWORD, configureWifiAddress);
+  while (WiFi.status() != WL_CONNECTED) { wifiFailover.poll(); delay(50); }
   Serial.println();
   Serial.println("Wi-Fi connected.");
-  Serial.print("  Mode: "); Serial.println(USE_STATIC_IP ? "STATIC" : "DHCP");
-  Serial.print("  SSID: "); Serial.println(WIFI_SSID);
+  Serial.print("  Mode: "); Serial.println(USE_STATIC_IP && !wifiFailover.secondary() ? "STATIC" : "DHCP");
+  Serial.print("  SSID: "); Serial.println(WiFi.SSID());
   Serial.print("  IP: "); Serial.println(WiFi.localIP());
   Serial.print("  Gateway: "); Serial.println(WiFi.gatewayIP());
   Serial.print("  Subnet: "); Serial.println(WiFi.subnetMask());
@@ -473,6 +464,12 @@ void setup() {
   server.on("/telemetry", HTTP_GET, handleTelemetry);
   server.on("/cmd", HTTP_GET, handleCmd);
   server.on("/config/guard", HTTP_GET, handleConfigGuard);
+  server.on("/reboot", HTTP_POST, [] {
+    stopMotors();
+    server.send(200, "application/json", "{\"ok\":true,\"rebooting\":true}");
+    delay(200); // Allow the acknowledgement to reach Scout before Wi-Fi shuts down.
+    ESP.restart();
+  });
   server.begin();
 
   gLeftCmd = 0;
@@ -484,6 +481,8 @@ void setup() {
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED) stopMotors();
+  wifiFailover.poll();
   server.handleClient();
 
   // Deadman safety

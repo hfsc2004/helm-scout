@@ -29,6 +29,8 @@ import "./commands/vehicle-tof-mode.js";
 import "./commands/vehicle-wide-tof.js";
 import "./commands/vehicle-imu-zero.js";
 import "./commands/vehicle-sensor-board.js";
+import "./commands/vehicle-reboot.js";
+import "./commands/vehicle-sensors.js";
 import "./commands/vehicle-drive.js";
 import "./commands/vehicle-wifi.js";
 import "./commands/vehicle-flash-config.js";

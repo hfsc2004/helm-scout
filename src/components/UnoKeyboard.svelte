@@ -1,6 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
+  import { boardOperations } from "../lib/bench-activity";
   import { onDestroy, onMount } from "svelte";
   import type { InputMode } from "../stores/inputMode";
 
@@ -22,9 +23,10 @@
   let statusInFlight = false;
   let bridgeError = "";
   let driveError = "";
+  $: if ($boardOperations[vehicleId] && activeDirection) releaseDrive();
 
   async function checkBridge(): Promise<void> {
-    if (disposed || statusInFlight) return;
+    if (disposed || statusInFlight || $boardOperations[vehicleId]) return;
     statusInFlight = true;
     try {
       const response = await window.helm.vehicle.sensorBoardUno({ vehicleId, action: "status" });
@@ -83,7 +85,7 @@
   }
 
   async function sendPulse(): Promise<void> {
-    if (inFlight || !activeDirection || !supported || disposed) return;
+    if (inFlight || !activeDirection || !supported || disposed || $boardOperations[vehicleId]) return;
     const direction = activeDirection;
     inFlight = true;
     try {
@@ -131,7 +133,7 @@
       return;
     }
     const direction = directionFor(event.code);
-    if (!direction || !supported) return;
+    if (!direction || !supported || $boardOperations[vehicleId]) return;
     event.preventDefault();
     if (activeCode === event.code) return;
     activeCode = event.code;
@@ -171,7 +173,7 @@
 </script>
 
 <section aria-label="Keyboard driving status">
-  <div class="heading"><strong>Driving</strong><span class:ready={supported}>{supported ? "Bridge ready" : "Reconnecting…"}</span></div>
+  <div class="heading"><strong>Driving</strong><span class:ready={supported}>{$boardOperations[vehicleId] ? "Board operation in progress" : supported ? "Bridge ready" : "Reconnecting…"}</span></div>
   {#if mode === "wasd" || mode === "numpad"}
     <p>{mode === "wasd" ? "WASD" : "NumPad"} controls. Click outside text fields before driving.</p>
   {:else}

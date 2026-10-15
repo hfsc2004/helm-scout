@@ -18,6 +18,9 @@
   const FIRST_FRAME_TIMEOUT_MS = 12000;
 
   export let flipped = false;
+  export let rotation = 0;
+  let viewportWidth = 0, viewportHeight = 0;
+  $: quarterTurn = rotation % 180 !== 0;
 
   let imgEl: HTMLImageElement | null = null;
   let currentObjectUrl: string | null = null;
@@ -177,9 +180,12 @@
 </script>
 
 {#if hasCamera}
-  <div class="wrap">
+  <div class="wrap" bind:clientWidth={viewportWidth} bind:clientHeight={viewportHeight}>
     <!-- svelte-ignore a11y-missing-attribute -->
-    <img bind:this={imgEl} class:flipped alt="Vehicle camera" />
+    <img bind:this={imgEl} alt="Vehicle camera"
+      style:width={`${quarterTurn ? viewportHeight : viewportWidth}px`}
+      style:height={`${quarterTurn ? viewportWidth : viewportHeight}px`}
+      style:transform={`rotate(${rotation}deg) scaleX(${flipped ? -1 : 1})`} />
     <div class="label" class:stale>{stale ? "CAM · STALE" : "CAM · LIVE"}</div>
   </div>
 {:else}
@@ -206,11 +212,11 @@
     overflow: hidden;
   }
   img {
-    max-width: 100%;
-    max-height: 100%;
+    flex: none;
+    max-width: none;
+    max-height: none;
     object-fit: contain;
   }
-  img.flipped { transform: scaleX(-1); }
   .label {
     position: absolute;
     top: 0.75rem;

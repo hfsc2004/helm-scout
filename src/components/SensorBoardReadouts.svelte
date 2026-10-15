@@ -1,6 +1,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright 2026 Pseudo Science Fiction -->
 <script lang="ts">
+  import SensorRecovery from "./SensorRecovery.svelte";
+  import ImuCalibration from "./ImuCalibration.svelte";
+  import BoardMaintenance from "./BoardMaintenance.svelte";
+  import BoardEvents from "./BoardEvents.svelte";
+  import { boardOperations, boardEpoch, withBoardOperation } from "../lib/bench-activity";
+  import { requestBench, errorText } from "../lib/bench";
+  import type { SensorName } from "@shared/ipc-channels";
   import { persistentDetails } from "../actions/persistentDetails";
   import { onMount } from "svelte";
   import type { SensorBoardScanZone, SensorBoardSnapshotResponse } from "@shared/ipc-channels";
@@ -8,6 +15,47 @@
   import { wideTofCells, wideDistanceBands as distanceBands } from "../lib/wide-tof-display";
 
   export let vehicleId: string;
+  let sensorStates: import("@shared/ipc-channels").SensorControlResponse["sensors"];
+  let sensorBusy = false;
+  let sensorError = "";
+  let sensorEpoch = 0;
+  const narrowNames = ["front", "rear"] as const;
+  let controlSensor: SensorName | null = null;
+  $: boardBusy = !!$boardOperations[vehicleId];
+  function invalidate(sensor: SensorName) {
+    ++sensorEpoch; ++wideEpoch;
+    if (snapshot) snapshot = { ...snapshot,
+      imu: sensor === "imu" ? null : snapshot.imu,
+      ranges: sensor === "front" || sensor === "rear" ? null : snapshot.ranges,
+      wide: sensor === "wide" ? null : snapshot.wide };
+    if (sensor === "imu") imuUpdatedAt = 0;
+    if (sensor === "wide") wideUpdatedAt = 0;
+  }
+  async function setNarrowMode(sensor: "front" | "rear", mode: string) {
+    controlSensor = sensor; sensorError = "";
+    try { await requestBench(vehicleId, "narrow-mode-set", { sensor, mode }); invalidate(sensor); }
+    catch (e) { sensorError = errorText(e); }
+  }
+  async function toggleSensor(sensor: import("@shared/ipc-channels").SensorName) {
+    if (sensorBusy || boardBusy || !sensorStates) return;
+    sensorBusy = true;
+    controlSensor = sensor;
+    ++sensorEpoch;
+    ++wideEpoch;
+    sensorError = "";
+    try {
+      const enabled = !sensorStates[sensor].enabled;
+      const result = await withBoardOperation(vehicleId, "Changing sensor state", () => window.helm.vehicle.sensors({ vehicleId, sensor, enabled }));
+      if (!result.ok) throw new Error(result.error ?? "Sensor change failed.");
+      sensorStates = result.sensors;
+      if (snapshot) snapshot = { ...snapshot,
+        imu: sensor === "imu" ? null : snapshot.imu,
+        ranges: sensor === "front" || sensor === "rear" ? null : snapshot.ranges,
+        wide: sensor === "wide" ? null : snapshot.wide };
+    } catch (e) { sensorError = String(e); }
+    finally { ++sensorEpoch; ++wideEpoch; sensorBusy = false; }
+  }
+
 
   let snapshot: SensorBoardSnapshotResponse | null = null;
   let updatedAt = 0;
@@ -44,7 +92,7 @@
     ++wideEpoch;
     profileError = "";
     try {
-      const result = await window.helm.vehicle.sensorBoardWideConfigure({ vehicleId, profile, hz });
+      const result = await withBoardOperation(vehicleId, "Changing SR Front profile", () => window.helm.vehicle.sensorBoardWideConfigure({ vehicleId, profile, hz }));
       if (!result.ok) throw new Error(result.error ?? "SR Front profile change failed.");
       // A settings response has no distance frame. Wait for a fresh frame
       // instead of redrawing old measurements at the new resolution.
@@ -79,6 +127,7 @@
     return `${value} mm`;
   };
   const rangeText = (ranges: SensorBoardSnapshotResponse["ranges"], name: string) => {
+    if ((name === "front" || name === "rear") && sensorStates?.[name].enabled === false) return "Off";
     const sensor = ranges?.singleZone?.find((item) => item.name === name);
     if (!sensor) return "—";
     if (!sensor.ready) return "Offline";
@@ -153,11 +202,11 @@
     active = true;
     ageTimer = setInterval(() => { now = Date.now(); }, 100);
     const pollWide = async () => {
-      const epoch = wideEpoch;
-      if (!wideBusy) {
+      const epoch = wideEpoch, operationEpoch = boardEpoch(vehicleId);
+      if (!wideBusy && !boardBusy && sensorStates?.wide.enabled !== false) {
         try {
           const next = await window.helm.vehicle.sensorBoardWideSnapshot({ vehicleId });
-          if (active && !wideBusy && epoch === wideEpoch) {
+          if (active && !wideBusy && epoch === wideEpoch && operationEpoch === boardEpoch(vehicleId)) {
             wideError = next.ok ? "" : next.error ?? "SR Front unavailable.";
             if (next.ok) {
               wideUpdatedAt = Date.now();
@@ -176,9 +225,17 @@
       if (active) wideTimer = setTimeout(pollWide, interval);
     };
     const poll = async () => {
+      if (boardBusy) { if (active) timer = setTimeout(poll, 1500); return; }
+      const epoch = sensorEpoch, operationEpoch = boardEpoch(vehicleId);
       try {
-        const next = await window.helm.vehicle.sensorBoardSnapshot({ vehicleId, includeWide: false });
+        const [next, controls] = await Promise.all([
+          window.helm.vehicle.sensorBoardSnapshot({ vehicleId, includeWide: false }),
+          window.helm.vehicle.sensors({ vehicleId }),
+        ]);
         if (!active) return;
+        if (epoch !== sensorEpoch || sensorBusy || operationEpoch !== boardEpoch(vehicleId)) { timer = setTimeout(poll, 1500); return; }
+        if (controls.ok) { sensorStates = controls.sensors; if (controlSensor === null) sensorError = ""; }
+        else { sensorStates = undefined; sensorError = controls.error ?? "Sensor controls unavailable."; }
         now = Date.now();
         if (next.ranges || next.imu || next.wide) updatedAt = now;
         if (next.imu) imuUpdatedAt = now;
@@ -186,7 +243,7 @@
         if (next.rssi != null) signalUpdatedAt = now;
         snapshot = {
           ranges: next.ranges ?? snapshot?.ranges ?? null,
-          imu: next.imu ?? snapshot?.imu ?? null,
+          imu: sensorStates?.imu.enabled === false ? null : next.imu ?? snapshot?.imu ?? null,
           wide: snapshot?.wide ?? null,
           rssi: next.rssi ?? snapshot?.rssi ?? null,
           error: next.error,
@@ -217,9 +274,14 @@
 <section class="sensor-panel">
   <details use:persistentDetails={{ vehicleId, section: "sr-front", defaultOpen: true }}><summary>SR Front ToF · {gridSide}×{gridSide}</summary>
   <div class="section-content">
+  <div class="bench-controls">
+    <button type="button" disabled={sensorBusy || wideBusy || boardBusy || !sensorStates} on:click={() => toggleSensor("wide")}>{!sensorStates ? "State unavailable" : sensorStates.wide.enabled === false ? "Off · turn on" : sensorStates?.["wide"].ready ? "On · turn off" : "Not ready · turn off"}</button>
+    <SensorRecovery {vehicleId} sensor={"wide"} disabled={sensorBusy || wideBusy || boardBusy} on:busy={(event) => { if (event.detail) invalidate("wide"); }} on:recovered={() => invalidate("wide")} />
+    {#if controlSensor === "wide" && sensorError}<p class="error" role="alert">{sensorError}</p>{/if}
+  </div>
   <div class="wide-controls">
     <label>Profile
-      <select value={profileChoice} disabled={wideBusy || !canConfigureWide}
+      <select value={profileChoice} disabled={wideBusy || sensorBusy || boardBusy || sensorStates?.wide.enabled === false || !canConfigureWide}
         on:change={changeWideProfile}>
         {#each Object.entries(WIDE_TOF_PROFILES) as [profile, settings]}
           <option value={profile}>{settings.label} · ~{settings.observedFeet}′ · {settings.resolution === 16 ? "4×4" : "8×8"}</option>
@@ -227,7 +289,7 @@
       </select>
     </label>
     <label>Rate
-      <select value={rateChoice} disabled={wideBusy || !canConfigureWide || profileRates.length === 1}
+      <select value={rateChoice} disabled={wideBusy || sensorBusy || boardBusy || sensorStates?.wide.enabled === false || !canConfigureWide || profileRates.length === 1}
         on:change={changeWideRate}>
         {#each profileRates as hz}<option value={hz}>{hz} Hz</option>{/each}
       </select>
@@ -241,7 +303,7 @@
     <p class="hint">{snapshot.wide.frequencyHz} Hz requested · {snapshot.wide.rangingMode} · strongest target{snapshot.wide.integrationMs != null ? ` · ${snapshot.wide.integrationMs} ms integration` : ""}</p>
   {/if}
   {#if wideUpdatedAt}<p class="hint">Frame age: {Number.isFinite(wideFrameAge) ? `${(wideFrameAge / 1000).toFixed(1)}s` : "unknown"}{wideFrameAge > 2000 ? " · stale" : ""}</p>{/if}
-  {#if !wideBusy && snapshot?.wide?.ready && snapshot.wide.rawDistanceMm?.length === wideResolution && snapshot.wide.targetStatus?.length === wideResolution}
+  {#if sensorStates?.wide.enabled !== false && !wideBusy && !boardBusy && snapshot?.wide?.ready && snapshot.wide.rawDistanceMm?.length === wideResolution && snapshot.wide.targetStatus?.length === wideResolution}
     <div class="grid-wrap">
       <div class="grid" style:grid-template-columns={`repeat(${gridSide}, 1fr)`}
         style:grid-template-rows={`repeat(${gridSide}, 1fr)`} aria-label={`Raw ${gridSide} by ${gridSide} distance map`}>
@@ -269,13 +331,26 @@
     <p class="hint">Colored squares are the SR Front sensor. White outlines and UL/UR/LL/LR labels are the separate LR Front quadrant scan, approximately placed—not pixel-aligned. * = stale confirmed LR value; ? = unconfirmed; ! = invalid raw target.</p>
     {#if snapshot.wide.profile === "inspect"}<p class="hint">Hover a square for target status, signal, ambient level, and target count.</p>{/if}
   {:else}
-    <p class="hint">Waiting for a fresh {gridSide}×{gridSide} frame.</p>
+    <p class="hint">{sensorStates?.wide.enabled === false ? "Sensor is off." : "Waiting for a fresh " + gridSide + "×" + gridSide + " frame."}</p>
   {/if}
 
   </div></details>
-  {#each ["front", "rear"] as name}
+  {#each narrowNames as name}
     {@const sensor = snapshot?.ranges?.singleZone?.find((item) => item.name === name)}
     <details use:persistentDetails={{ vehicleId, section: `lr-${name}` }}><summary>LR {name === "front" ? "Front" : "Rear"} ToF</summary><div class="section-content">
+  <div class="bench-controls">
+    <button type="button" disabled={sensorBusy || wideBusy || boardBusy || !sensorStates} on:click={() => toggleSensor(name)}>{!sensorStates ? "State unavailable" : sensorStates[name].enabled === false ? "Off · turn on" : sensorStates?.[name].ready ? "On · turn off" : "Not ready · turn off"}</button>
+    <SensorRecovery {vehicleId} sensor={name} disabled={sensorBusy || wideBusy || boardBusy} on:busy={(event) => { if (event.detail) invalidate(name); }} on:recovered={() => invalidate(name)} />
+    {#if controlSensor === name && sensorError}<p class="error" role="alert">{sensorError}</p>{/if}
+  </div>
+
+    <label class="narrow-mode">Full-field mode
+      <select value={sensor?.auto ? "auto" : sensor?.activeMode ?? sensor?.mode ?? "auto"} disabled={boardBusy || !sensor?.ready}
+        on:change={(event) => setNarrowMode(name, event.currentTarget.value)}>
+        <option value="auto">Automatic</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option>
+      </select>
+    </label>
+
     <div class="readout"><span>Distance</span><strong>{rangeText(snapshot?.ranges ?? null, name)}</strong></div>
     {#if sensor?.scan?.zones?.length === 5}
       <div class="scan-list" aria-label={`${name} ToF scan regions`}>
@@ -294,19 +369,27 @@
   {/each}
 
   <details use:persistentDetails={{ vehicleId, section: "imu" }}><summary>IMU · orientation and motion</summary><div class="section-content">
+  <div class="bench-controls">
+    <button type="button" disabled={sensorBusy || wideBusy || boardBusy || !sensorStates} on:click={() => toggleSensor("imu")}>{!sensorStates ? "State unavailable" : sensorStates.imu.enabled === false ? "Off · turn on" : sensorStates?.["imu"].ready ? "On · turn off" : "Not ready · turn off"}</button>
+    <SensorRecovery {vehicleId} sensor={"imu"} disabled={sensorBusy || wideBusy || boardBusy} on:busy={(event) => { if (event.detail) invalidate("imu"); }} on:recovered={() => invalidate("imu")} />
+    {#if controlSensor === "imu" && sensorError}<p class="error" role="alert">{sensorError}</p>{/if}
+  </div>
+
+  <ImuCalibration {vehicleId} disabled={sensorStates?.imu.enabled === false} on:changed={() => invalidate("imu")} />
+  {#if sensorStates?.imu.enabled === false}<p class="hint">Off</p>{:else}
   {#if imuUpdatedAt}<p class="hint">{ageLabel(imuUpdatedAt, now)}</p>{/if}
   <h3>Orientation <small>(relative to boot pose)</small></h3>
   {#if snapshot?.imu?.orientationReady === false}
     <p class="hint">Calibrating while stationary: {snapshot.imu.calibrationSamples ?? 0}/{snapshot.imu.calibrationTarget ?? 80} samples</p>
   {:else if snapshot?.imu?.orientationReady !== true}
-    <p class="hint">Orientation tracking requires updated firmware.</p>
+    <p class="hint">Waiting for fresh calibrated orientation. Check sensor health under Board status.</p>
   {/if}
   <div class="readout"><span>Roll (upright +)</span><strong>{angle(snapshot?.imu?.orientationDeg, 0, -1)}</strong></div>
   <div class="readout"><span>Pitch</span><strong>{angle(snapshot?.imu?.orientationDeg, 1)}</strong></div>
   <div class="readout"><span>Yaw</span><strong>{angle(snapshot?.imu?.orientationDeg, 2)}</strong></div>
   <p class="hint">Roll sign follows the tested upright direction in Helm Scout; raw chip-axis data is unchanged. Yaw can drift without a compass.</p>
 
-  <h3>Motion rate <small>(chip axes)</small></h3>
+  <h3>Motion rate <small>(configured axes; raw counts remain chip axes)</small></h3>
   <div class="readout"><span>Accel X</span><strong>{axis(snapshot?.imu?.accelG, 0, "g")}</strong></div>
   <div class="readout"><span>Accel Y</span><strong>{axis(snapshot?.imu?.accelG, 1, "g")}</strong></div>
   <div class="readout"><span>Accel Z</span><strong>{axis(snapshot?.imu?.accelG, 2, "g")}</strong></div>
@@ -314,7 +397,9 @@
   <div class="readout"><span>Gyro Y</span><strong>{axis(snapshot?.imu?.gyroDps, 1, "°/s")}</strong></div>
   <div class="readout"><span>Gyro Z</span><strong>{axis(snapshot?.imu?.gyroDps, 2, "°/s")}</strong></div>
 
+  {/if}
   </div></details>
+  <BoardEvents {vehicleId} />
   <details use:persistentDetails={{ vehicleId, section: "board" }}><summary>Board status</summary><div class="section-content">
   <p class="status">
     {#if !snapshot}Connecting…
@@ -324,10 +409,14 @@
   <div class="readout"><span>Wi‑Fi signal{ageLabel(signalUpdatedAt, now)}</span><strong>{snapshot?.rssi == null ? "—" : `${snapshot.rssi} dBm`}</strong></div>
   <div class="readout"><span>IMU temperature</span><strong>{snapshot?.imu?.temperatureC == null ? "—" : `${snapshot.imu.temperatureC.toFixed(1)} °C / ${(snapshot.imu.temperatureC * 9 / 5 + 32).toFixed(1)} °F`}</strong></div>
   <p class="hint">IMU die temperature is not room temperature.</p>
+  <BoardMaintenance {vehicleId} />
+  {#if controlSensor === null && sensorError}<p class="hint error">{sensorError}</p>{/if}
   </div></details>
 </section>
 
 <style>
+  .narrow-mode { display: flex; flex-direction: column; gap: .3rem; margin: .5rem 0; font-size: .78rem; }
+  .narrow-mode select { padding: .4rem; background: var(--bg); color: var(--fg); border: 1px solid var(--border); }
   .sensor-panel { color: var(--text); }
   details { border-bottom: 1px solid var(--border); }
   summary { padding: 0.85rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 600; }

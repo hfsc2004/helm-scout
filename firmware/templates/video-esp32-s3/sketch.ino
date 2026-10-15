@@ -14,12 +14,17 @@
 // below; values map to a single CAMERA_MODEL_* define.
 
 #include <WiFi.h>
+#include "wifi_failover.h"
 #include <WebServer.h>
 #include "esp_camera.h"
 
 // ===== Wi-Fi =====
-const char* WIFI_SSID = "{{wifi.ssid}}";
-const char* WIFI_PASS = "{{wifi.password}}";
+const char* WIFI_SSID = "{{wifi.ssid.cpp}}";
+const char* WIFI_PASS = "{{wifi.password.cpp}}";
+
+const char *WIFI_SECONDARY_SSID = "{{wifi.secondarySsid.cpp}}";
+const char *WIFI_SECONDARY_PASSWORD = "{{wifi.secondaryPassword.cpp}}";
+ScoutWifiFailover wifiFailover;
 
 const bool USE_STATIC_IP = {{wifi.useStatic}};
 const IPAddress STATIC_IP({{wifi.staticIp.octets}});
@@ -32,6 +37,7 @@ const unsigned long WIFI_RETRY_DELAY_MS = 500;
 // ===== HTTP =====
 const int HTTP_PORT = {{http.port}};
 WebServer server(HTTP_PORT);
+WebServer rebootServer(82);
 
 // ===== Camera =====
 // Pin profile is a string in the template; the render step substitutes
@@ -201,6 +207,7 @@ void streamMjpeg() {
   client.printf("Access-Control-Allow-Origin: *\r\n\r\n");
 
   while (client.connected()) {
+    rebootServer.handleClient();
     camera_fb_t* fb = esp_camera_fb_get();
     if (!fb) break;
     client.printf("--%s\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
@@ -249,22 +256,21 @@ IPAddress derivedGateway(IPAddress ip) {
   return IPAddress(ip[0], ip[1], ip[2], 1);
 }
 
-bool connectWifi() {
-  WiFi.mode(WIFI_STA);
-  if (USE_STATIC_IP) {
+void configureWifiAddress(bool secondary) {
+  if (!secondary && USE_STATIC_IP) {
     IPAddress mask = cidrToMask(STATIC_CIDR);
     IPAddress gw = derivedGateway(STATIC_IP);
     if (!WiFi.config(STATIC_IP, gw, mask, STATIC_DNS1, STATIC_DNS2)) {
       Serial.println("WiFi.config() failed");
     }
+  } else {
+    WiFi.config(IPAddress(0,0,0,0), IPAddress(0,0,0,0), IPAddress(0,0,0,0));
   }
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    if (millis() - start > WIFI_CONNECT_TIMEOUT_MS) return false;
-    delay(WIFI_RETRY_DELAY_MS);
-    Serial.print(".");
-  }
+}
+
+bool connectWifi() {
+  wifiFailover.begin(WIFI_SSID, WIFI_PASS, WIFI_SECONDARY_SSID, WIFI_SECONDARY_PASSWORD, configureWifiAddress);
+  while (WiFi.status() != WL_CONNECTED) { wifiFailover.poll(); delay(50); }
   Serial.println();
   Serial.print("WiFi up at ");
   Serial.println(WiFi.localIP());
@@ -292,10 +298,18 @@ void setup() {
   server.on("/capture", HTTP_GET, sendJpegSnapshot);
   server.on("/health",  HTTP_GET, sendHealth);
   server.onNotFound([]() { server.send(404, "text/plain", "not found"); });
+  rebootServer.on("/reboot", HTTP_POST, [] {
+    rebootServer.send(200, "application/json", "{\"ok\":true,\"rebooting\":true}");
+    delay(200); // Allow the acknowledgement to reach Scout before Wi-Fi shuts down.
+    ESP.restart();
+  });
+  rebootServer.begin();
   server.begin();
   Serial.printf("HTTP up on port %d\n", HTTP_PORT);
 }
 
 void loop() {
+  wifiFailover.poll();
+  rebootServer.handleClient();
   server.handleClient();
 }

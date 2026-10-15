@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <script lang="ts">
+  import { boardOperations } from "../lib/bench-activity";
   import { onMount } from "svelte";
   import type { LightScript, LightPlayback } from "@shared/light-scripts";
   export let vehicleId: string;
@@ -17,6 +18,7 @@
     } catch (e) { error = String(e); }
   }
   async function act(action: "new" | "edit" | "delete" | "play" | "loop" | "stop") {
+    if ((action === "play" || action === "loop") && $boardOperations[vehicleId]) return;
     busy = true; error = "";
     try {
       if (action === "new" || action === "edit") await window.helm.lights.editor(action === "edit" ? selected : undefined);
@@ -48,8 +50,8 @@
     <button on:click={() => act("new")} disabled={busy}>New…</button>
     <button on:click={() => act("edit")} disabled={busy || !selected}>Edit</button>
     <button on:click={() => act("delete")} disabled={busy || !selected || playback.running}>Delete</button>
-    <button on:click={() => act("play")} disabled={busy || playback.running || !filtered.some(script => script.id === selected)}>Play</button>
-    <button class="loop" on:click={() => act("loop")} disabled={busy || playback.running || !filtered.some(script => script.id === selected)} aria-label="Play Loop" title="Play Loop — repeat until stopped">
+    <button on:click={() => act("play")} disabled={busy || playback.running || !!$boardOperations[vehicleId] || !filtered.some(script => script.id === selected)}>Play</button>
+    <button class="loop" on:click={() => act("loop")} disabled={busy || playback.running || !!$boardOperations[vehicleId] || !filtered.some(script => script.id === selected)} aria-label="Play Loop" title="Play Loop — repeat until stopped">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11 9 L11 23 L23 16 Z" fill="currentColor"/><path d="M25 14 C30 14 30 27 22 27 H8 C3 27 3 16 10 16 M7 13 L10 16 L7 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <button on:click={() => act("stop")} disabled={busy || !playback.running}>■ Stop</button>

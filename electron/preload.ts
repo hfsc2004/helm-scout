@@ -28,6 +28,11 @@ const CH = {
   vehicleSensorBoardSnapshot: "vehicle:sensor-board-snapshot",
   vehicleSensorBoardWideConfigure: "vehicle:sensor-board-wide-configure",
   vehicleSensorBoardWideSnapshot: "vehicle:sensor-board-wide-snapshot",
+  vehicleBench: "vehicle:bench",
+  vehicleChooseFirmware: "vehicle:choose-board-firmware",
+  vehicleUpdateBoard: "vehicle:update-board",
+  vehicleSensors: "vehicle:sensors",
+  vehicleReboot: "vehicle:reboot",
   vehicleSensorBoardUno: "vehicle:sensor-board-uno",
   vehicleStreamStateOpen: "vehicle:stream-state-open",
   vehicleStreamStateClose: "vehicle:stream-state-close",
@@ -86,6 +91,11 @@ const api = {
     sensorBoardSnapshot: (req: unknown) => ipcRenderer.invoke(CH.vehicleSensorBoardSnapshot, req),
     sensorBoardWideConfigure: (req: unknown) => ipcRenderer.invoke(CH.vehicleSensorBoardWideConfigure, req),
     sensorBoardWideSnapshot: (req: unknown) => ipcRenderer.invoke(CH.vehicleSensorBoardWideSnapshot, req),
+    bench: (req: unknown) => ipcRenderer.invoke(CH.vehicleBench, req),
+    chooseBoardFirmware: () => ipcRenderer.invoke(CH.vehicleChooseFirmware),
+    updateBoard: (req: unknown) => ipcRenderer.invoke(CH.vehicleUpdateBoard, req),
+    sensors: (req: unknown) => ipcRenderer.invoke(CH.vehicleSensors, req),
+    reboot: (req: unknown) => ipcRenderer.invoke(CH.vehicleReboot, req),
     sensorBoardUno: (req: unknown) => ipcRenderer.invoke(CH.vehicleSensorBoardUno, req),
     streamState: async (req: unknown, onEvent: (e: unknown) => void) => {
       const handle = (await ipcRenderer.invoke(CH.vehicleStreamStateOpen, req)) as {

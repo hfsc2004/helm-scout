@@ -170,6 +170,18 @@
     fleet.select(vehicle.id);
     activeView.set("drive");
   }
+  let rebootMessage = "";
+  async function reboot(board: "drive" | "video") {
+    busy = true;
+    error = null;
+    rebootMessage = "";
+    try {
+      const result = await window.helm.vehicle.reboot({ vehicleId: vehicle.id, board });
+      if (!result.ok) error = result.error ?? "Reboot request failed.";
+      else rebootMessage = "Reboot accepted. Allow a few seconds for the board to reconnect.";
+    } catch (e) { error = e instanceof Error ? e.message : String(e); }
+    finally { busy = false; }
+  }
 </script>
 
 <article class="card">
@@ -404,9 +416,19 @@
       Remove vehicle
     </button>
   </footer>
+  <div class="reboot-controls">
+    {#if hasDriveControl(vehicle)}
+      <button class="link" disabled={busy} on:click={() => reboot("drive")}>Reboot drive board</button>
+    {/if}
+    {#if hasCamera}
+      <button class="link" disabled={busy} on:click={() => reboot("video")}>Reboot {vehicle.sensorBoardRevision === "1.3" ? "sensor" : "camera"} board</button>
+    {/if}
+    {#if rebootMessage}<p class="muted">{rebootMessage}</p>{/if}
+  </div>
 </article>
 
 <style>
+  .reboot-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
   .card {
     background: var(--surface);
     border: 1px solid var(--border);

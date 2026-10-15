@@ -108,6 +108,7 @@
 
   let wifiSsid = "";
   let wifiPassword = "";
+  let secondaryWifiEnabled = false, secondaryWifiSsid = "", secondaryWifiPassword = "", secondaryWifiVisible = false;
   // Show/mask the WiFi password while typing — lets the user verify they
   // got it right before the firmware bakes it in (a typo here means
   // re-flashing, which is slow and annoying).
@@ -292,6 +293,8 @@
       const values: Record<string, unknown> = {
         "wifi.ssid": wifiSsid,
         "wifi.password": wifiPassword,
+        "wifi.secondarySsid": secondaryWifiEnabled ? secondaryWifiSsid : "",
+        "wifi.secondaryPassword": secondaryWifiEnabled ? secondaryWifiPassword : "",
         "wifi.useStatic": ipMode === "static",
         "wifi.staticIp": staticIp,
         "wifi.staticCidr": staticCidr,
@@ -307,6 +310,8 @@
     return {
       "wifi.ssid": wifiSsid,
       "wifi.password": wifiPassword,
+        "wifi.secondarySsid": secondaryWifiEnabled ? secondaryWifiSsid : "",
+        "wifi.secondaryPassword": secondaryWifiEnabled ? secondaryWifiPassword : "",
       "wifi.useStatic": ipMode === "static",
       "wifi.staticIp": staticIp,
       "wifi.staticCidr": staticCidr,
@@ -356,6 +361,7 @@
     }
     if (!wifiSsid.trim()) return "pick or type a WiFi SSID";
     if (!wifiPassword) return "enter the WiFi password";
+    if (secondaryWifiEnabled && !secondaryWifiSsid.trim()) return "enter a secondary WiFi SSID or disable secondary WiFi";
     if (ipMode === "static") {
       const m = staticIp.trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
       if (!m) return "static IP must be in N.N.N.N form";
@@ -380,6 +386,8 @@
     vehicleSlug,
     wifiSsid,
     wifiPassword,
+    secondaryWifiEnabled,
+    secondaryWifiSsid,
     ipMode,
     staticIp,
     staticCidr,
@@ -778,6 +786,13 @@
           </button>
         </div>
       </label>
+      <label class="checkbox"><input type="checkbox" bind:checked={secondaryWifiEnabled} disabled={flashing} /> Use secondary Wi-Fi as a fallback</label>
+      {#if secondaryWifiEnabled}
+        <label><span class="lbl">Secondary SSID</span><input type="text" bind:value={secondaryWifiSsid} disabled={flashing} autocomplete="off" /></label>
+        <label><span class="lbl">Secondary password</span><input type={secondaryWifiVisible ? "text" : "password"} bind:value={secondaryWifiPassword} disabled={flashing} autocomplete="off" /></label>
+        <label class="checkbox"><input type="checkbox" bind:checked={secondaryWifiVisible} disabled={flashing} /> Show secondary password</label>
+        <p class="muted small">The board tries primary Wi-Fi first, then secondary after 30 seconds. It also retries the other network after connection loss. Secondary Wi-Fi uses DHCP; its IP may differ.</p>
+      {/if}
     </section>
 
     <section>
